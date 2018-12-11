@@ -31,8 +31,8 @@ get_deep_obj_size(my_obj)
 ```
 
 
-# Install (beta)
-`python setup.py develop --user`
+# Install
+`pip install objsize`
 
 
 # License

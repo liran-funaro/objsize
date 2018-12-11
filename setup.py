@@ -20,12 +20,16 @@ from setuptools import setup
 
 setup(
       name="objsize",
-      version="0.1",
+      version="0.1.0",
       py_modules=['objsize'],
       description="Calculates an object deep size",
       author="Liran Funaro",
       author_email="fonaro+objsize@gmail.com",
+      long_description=open('README.md').read(),
+      long_description_content_type='text/markdown',
       url="https://github.com/fonaro/objsize",
+      keywords='object-size  debug deep-object-size',
+      license='GPL',
       classifiers=[
             "Programming Language :: Python :: 2",
             "Programming Language :: Python :: 3",
@@ -35,5 +39,4 @@ setup(
             "Operating System :: OS Independent",
             "Topic :: Software Development :: Libraries :: Python Modules",
       ],
-      long_description=open('README.md').read(),
 )
