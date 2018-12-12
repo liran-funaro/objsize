@@ -20,7 +20,7 @@ from setuptools import setup
 
 setup(
       name="objsize",
-      version="0.1.0",
+      version="0.1.01",
       py_modules=['objsize'],
       description="Calculates an object deep size",
       author="Liran Funaro",
