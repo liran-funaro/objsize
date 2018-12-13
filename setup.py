@@ -28,7 +28,7 @@ setup(
       long_description=open('README.md').read(),
       long_description_content_type='text/markdown',
       url="https://github.com/fonaro/objsize",
-      keywords='object-size  debug deep-object-size',
+      keywords='object-size debug deep-object-size',
       license='GPL',
       classifiers=[
             "Programming Language :: Python :: 2",

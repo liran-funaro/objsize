@@ -10,6 +10,10 @@ It is implemented without recursive calls
 for best performance.
 
 
+# Install
+`pip install objsize`
+
+
 # Usage
 ```python
 import numpy as np
@@ -30,10 +34,5 @@ get_deep_obj_size(my_obj)
 # 16984
 ```
 
-
-# Install
-`pip install objsize`
-
-
 # License
-[GPL](LICENSE)
+[GPL](LICENSE.txt)
