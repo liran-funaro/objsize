@@ -11,10 +11,14 @@ It is implemented without recursive calls for best performance.
 
 
 # Install
-`pip install objsize`
+
+```bash
+pip install objsize
+```
 
 
 # Usage
+
 ```python
 my_data = (list(range(5)), list(range(10)))
 

@@ -22,7 +22,7 @@ setup(
     name="objsize",
     version="0.3.0",
     py_modules=['objsize'],
-    description="Traversal over Python's objects sub-tree and calculating"
+    description="Traversal over Python's objects sub-tree and calculating "
                 "the total size of the sub-tree (deep size).",
     author="Liran Funaro",
     author_email="fonaro+objsize@gmail.com",
