@@ -20,7 +20,7 @@ pip install objsize
 # Usage
 
 ```python
-my_data = (list(range(5)), list(range(10)))
+my_data = (list(range(3)), list(range(5)))
 
 class MyClass:
     def __init__(self, x, y):
@@ -36,7 +36,7 @@ my_obj = MyClass(*my_data)
 from objsize import get_deep_size
 # Calculates my_obj deep size, including its stored data.
 print(get_deep_size(my_obj))
-# 1012
+# 784
 
 from objsize import get_exclusive_deep_size
 # Calculates my_obj deep size, ignoring non exclusive
@@ -48,27 +48,23 @@ from objsize import traverse_bfs
 # Traverse all the objects in my_obj sub tree.
 for o in traverse_bfs(my_obj):
     print(o)
-# {'x': [0, 1, 2, 3, 4], 'y': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'd': {'x': [0, 1, 2, 3, 4], 'y': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'self': MyClass}}
+# {'x': [0, 1, 2], 'y': [0, 1, 2, 3, 4], 'd': {'x': [0, 1, 2], 'y': [0, 1, 2, 3, 4], 'self': MyClass}}
+# [0, 1, 2]
 # [0, 1, 2, 3, 4]
-# [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-# {'x': [0, 1, 2, 3, 4], 'y': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'self': MyClass}
-# 4
-# 3
+# {'x': [0, 1, 2], 'y': [0, 1, 2, 3, 4], 'self': MyClass}
 # 2
 # 1
 # 0
-# 9
-# 8
-# 7
-# 6
-# 5
+# 4
+# 3
+
 
 from objsize import traverse_exclusive_bfs
 # Traverse all the objects in my_obj sub tree, ignoring non exclusive ones.
 for o in traverse_exclusive_bfs(my_obj):
     print(o)
-# {'x': [0, 1, 2, 3, 4], 'y': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'd': {'x': [0, 1, 2, 3, 4], 'y': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'self': MyClass}}
-# {'x': [0, 1, 2, 3, 4], 'y': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'self': MyClass}
+# {'x': [0, 1, 2], 'y': [0, 1, 2, 3, 4], 'd': {'x': [0, 1, 2], 'y': [0, 1, 2, 3, 4], 'self': MyClass}}
+# {'x': [0, 1, 2], 'y': [0, 1, 2, 3, 4], 'self': MyClass}
 ```
 
 # License
