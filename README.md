@@ -16,22 +16,26 @@ for best performance.
 
 # Usage
 ```python
-import numpy as np
-from objsize import get_deep_obj_size
+from objsize import get_deep_size
 
-x = np.random.rand(1024).astype(np.float64)
-y = np.random.rand(1024).astype(np.float64)
-d = {'x': x, 'y': y}
+my_data = (list(range(5)), list(range(10)))
 
 class MyClass:
-    def __init__(self, xx, yy, dd):
-        self.x = xx
-        self.y = yy
-        self.d = dd
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.d = {'x': x, 'y': y, 'self': self}
 
-my_obj = MyClass(x, y, d)
-get_deep_obj_size(my_obj)
-# 16984
+my_obj = MyClass(*my_data)
+
+# Calculates my_obj deep size, including its stored data.
+print(get_deep_size(my_obj))
+# 1012
+
+# Calculates my_obj deep size, ignoring non exclusive
+# objects such as the ones stores in my_data.
+print(get_deep_size(my_obj, only_exclusive=True))
+# 408
 ```
 
 # License
