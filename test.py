@@ -32,7 +32,13 @@ from collections import namedtuple
 
 import objsize
 
-tested_method = objsize.get_deep_obj_size
+
+def calc_class_obj_sz(obj, *field_names):
+    sz = sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
+    if sys.version_info[0] < 3:
+        # python 2 classes include extra string for each member.
+        sz += sum(map(sys.getsizeof, field_names))
+    return sz
 
 
 class TestDeepObjSize(unittest.TestCase):
@@ -44,7 +50,7 @@ class TestDeepObjSize(unittest.TestCase):
     def test_empty_list(self):
         empty_list = []
         self.assertEqual(sys.getsizeof(empty_list),
-                         tested_method(empty_list))
+                         objsize.get_deep_size(empty_list))
 
     def test_list_of_collections(self):
         collection_list = [[], {}, ()]
@@ -55,13 +61,14 @@ class TestDeepObjSize(unittest.TestCase):
         expected_size = empty_list_size * 2 + empty_tuple_size + empty_dict_size + pointer_byte_size
 
         self.assertEqual(expected_size,
-                         tested_method(collection_list))
+                         objsize.get_deep_size(collection_list))
 
     def test_no_double_counting(self):
         rep = ["test1"]
         obj = [rep, rep]
         obj2 = [rep]
-        self.assertEqual(tested_method(obj), tested_method(obj2) + 8)
+        expected_sz = objsize.get_deep_size(obj2) + 8
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
 
     def test_gracefully_handles_self_referential_objects(self):
         class MyClass(object):
@@ -69,11 +76,11 @@ class TestDeepObjSize(unittest.TestCase):
 
         obj = MyClass()
         obj.prop = obj
-        self.assertEqual(tested_method(obj), tested_method(obj.prop))
+        self.assertEqual(objsize.get_deep_size(obj), objsize.get_deep_size(obj.prop))
 
     def test_string(self):
         test_string = "abc"
-        self.assertEqual(sys.getsizeof(test_string), tested_method(test_string))
+        self.assertEqual(sys.getsizeof(test_string), objsize.get_deep_size(test_string))
 
     def test_custom_class(self):
         class MyClass(object):
@@ -82,22 +89,18 @@ class TestDeepObjSize(unittest.TestCase):
                 self.y = y
 
         point = MyClass(3, 4)
-        expected_size = (sys.getsizeof(point) +
-                         sys.getsizeof(point.__dict__) +
+        expected_size = (calc_class_obj_sz(point, 'x', 'y') +
                          sys.getsizeof(3) +
                          sys.getsizeof(4))
-        if sys.version_info[0] < 3:
-            # python 2 classes include extra string for each member.
-            expected_size += sys.getsizeof('x') + sys.getsizeof('y')
-        self.assertEqual(tested_method(point), expected_size)
+        self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_namedtuple(self):
         Point = namedtuple('Point', ['x', 'y'])
         point = Point(3, 4)
-        self.assertEqual(tested_method(point),
-                         sys.getsizeof(point) +
+        expected_size = (sys.getsizeof(point) +
                          sys.getsizeof(3) +
                          sys.getsizeof(4))
+        self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_subclass_of_namedtuple(self):
         class MyPoint(namedtuple('MyPoint', ['x', 'y'])):
@@ -113,20 +116,20 @@ class TestDeepObjSize(unittest.TestCase):
         # >>> all_obj = {id(o) for o in gc.get_objects()}
         # >>> id(point.__dict__) in all_obj
         # False
-        self.assertEqual(tested_method(point),
-                         sys.getsizeof(point) +
+        expected_size = (sys.getsizeof(point) +
                          sys.getsizeof(3) +
                          sys.getsizeof(4))
+        self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_subclass_of_namedtuple_with_slots(self):
         class MyPoint(namedtuple('MyPoint', ['x', 'y'])):
             __slots__ = ()
 
         point = MyPoint(3, 4)
-        self.assertEqual(tested_method(point),
-                         sys.getsizeof(point) +
+        expected_size = (sys.getsizeof(point) +
                          sys.getsizeof(3) +
                          sys.getsizeof(4))
+        self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_slots(self):
         class MySlots1(object):
@@ -160,7 +163,39 @@ class TestDeepObjSize(unittest.TestCase):
             version_addition = 4
 
         # base 40 for the class, 28 per integer, +8 per element
-        self.assertEqual(tested_method(s2), tested_method(s1) + 28 + 4 + version_addition)
-        self.assertEqual(tested_method(s3), tested_method(s2) + 28 + 4 + version_addition)
-        self.assertEqual(tested_method(s3), tested_method(s1) + 56 + 8 + version_addition * 2)
+        self.assertEqual(objsize.get_deep_size(s1) + 28 + 4 + version_addition, objsize.get_deep_size(s2))
+        self.assertEqual(objsize.get_deep_size(s2) + 28 + 4 + version_addition, objsize.get_deep_size(s3))
+        self.assertEqual(objsize.get_deep_size(s1) + 56 + 8 + version_addition * 2, objsize.get_deep_size(s3))
         # *2 for the num of variables in difference
+
+    def test_multi_obj(self):
+        class MyClass(object):
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
+
+        strs = 'hello world', 'foo bar', 'something else'
+        objs = MyClass(strs[0], strs[1]), MyClass(strs[0], strs[2]), MyClass(strs[1], strs[2])
+        expected_sz = sum(map(sys.getsizeof, strs))
+
+        expected_sz += sum(calc_class_obj_sz(o, 'x', 'y') for o in objs)
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(*objs))
+        self.assertEqual(expected_sz, objsize.get_deep_size(*objs, *objs))
+
+    def test_unique(self):
+        import uuid
+        import gc
+        obj = [str(uuid.uuid4()) for _ in range(5)]
+        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        gc.collect()
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, only_exclusive=True))
+
+        fake_holder = [obj[2]]
+        expected_sz -= sys.getsizeof(fake_holder[0])
+
+        gc.collect()
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, only_exclusive=True))

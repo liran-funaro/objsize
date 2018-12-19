@@ -1,4 +1,6 @@
 """
+Calculates the deep size of Python's objects.
+
 Author: Liran Funaro <funaro@cs.technion.ac.il>
 
 Copyright (C) 2006-2018 Liran Funaro
@@ -20,28 +22,55 @@ import gc
 import sys
 
 
-def get_deep_obj_size(obj):
-    """ Calculates an object deep size """
-    marked = {id(obj)}
-    obj_q = [obj]
+def get_deep_size(*objs, only_exclusive=False):
+    """
+    Calculates the deep size of all the arguments.
+
+    :param objs: One or more object(s)
+    :param only_exclusive: If True, then only calculate objects that are exclusive
+        to this objects and/or its descendants.
+    :return: The object's deep size
+    """
+    root_obj_ids = set(id(o) for o in objs)
+    marked = set()
     sz = 0
+    collected = []
 
-    while obj_q:
-        sz += sum(map(sys.getsizeof, obj_q))
+    while objs:
+        # Get the object's ids
+        objs = ((id(o), o) for o in objs)
 
-        # Lookup all the object referred to by the object in obj_q.
+        # Filter:
+        #  - Object that are already marked (using the marked set).
+        #  - Type objects such as a class or a module as they are common among all objects.
+        #  - Repeated objects (using dict notation).
+        objs = {o_id: o for o_id, o in objs if o_id not in marked and not isinstance(o, type)}
+
+        # Update the marked set with the ids so we will not traverse them again.
+        marked.update(objs.keys())
+
+        if only_exclusive:
+            # Collect the objects
+            collected.extend(objs.values())
+        else:
+            # Calculate each object size
+            sz += sum(map(sys.getsizeof, objs.values()))
+
+        # Lookup all the object referred to by the object from the current round.
         # See: https://docs.python.org/3.7/library/gc.html#gc.get_referents
-        referred = ((id(o), o) for o in gc.get_referents(*obj_q))
+        objs = gc.get_referents(*objs.values())
 
-        # Filter object that are already marked.
-        # Filter type objects such as a class or a module as they are common among all objects.
-        # Using dict notation will prevent repeated objects.
-        referred = {o_id: o for o_id, o in referred if o_id not in marked and not isinstance(o, type)}
+    if only_exclusive:
+        # Test for each object that all the object that refer to it is in the marked set or is a root
+        # See: https://docs.python.org/3.7/library/gc.html#gc.get_referrers
 
-        # The new obj_q will be the ones that were not marked,
-        # and we will update marked with their ids so we will
-        # not traverse them again.
-        obj_q = referred.values()
-        marked.update(referred.keys())
+        # We add the collected list to the marked items because it referrers all our objects
+        marked.add(id(collected))
+        # We first make sure that any "old" objects were collected
+        gc.collect()
+
+        sz = sum(map(sys.getsizeof,
+                     filter(lambda o: (id(o) in root_obj_ids) or (marked.issuperset(map(id, gc.get_referrers(o)))),
+                            collected)))
 
     return sz
