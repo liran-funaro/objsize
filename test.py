@@ -54,20 +54,18 @@ class TestDeepObjSize(unittest.TestCase):
 
     def test_list_of_collections(self):
         collection_list = [[], {}, ()]
-        pointer_byte_size = 8 * len(collection_list)
         empty_list_size = sys.getsizeof([])
         empty_tuple_size = sys.getsizeof(())
         empty_dict_size = sys.getsizeof({})
-        expected_size = empty_list_size * 2 + empty_tuple_size + empty_dict_size + pointer_byte_size
+        expected_size = sys.getsizeof(collection_list) + empty_list_size + empty_tuple_size + empty_dict_size
 
-        self.assertEqual(expected_size,
-                         objsize.get_deep_size(collection_list))
+        self.assertEqual(expected_size, objsize.get_deep_size(collection_list))
 
     def test_no_double_counting(self):
         rep = ["test1"]
         obj = [rep, rep]
         obj2 = [rep]
-        expected_sz = objsize.get_deep_size(obj2) + 8
+        expected_sz = objsize.get_deep_size(obj2) - sys.getsizeof(obj2) + sys.getsizeof(obj)
         self.assertEqual(expected_sz, objsize.get_deep_size(obj))
 
     def test_gracefully_handles_self_referential_objects(self):
@@ -157,16 +155,13 @@ class TestDeepObjSize(unittest.TestCase):
         s2 = MySlots2(3, 4)
         s3 = MySlots3(4, 5, 6)
 
-        version_addition = 0
+        s1_sz = sys.getsizeof(s1) + sys.getsizeof(7)
+        s2_sz = sys.getsizeof(s2) + sys.getsizeof(3) + sys.getsizeof(4)
+        s3_sz = sys.getsizeof(s3) + sys.getsizeof(4) + sys.getsizeof(5) + sys.getsizeof(6)
 
-        if hasattr(sys.version_info, 'major') and sys.version_info.major == 3:
-            version_addition = 4
-
-        # base 40 for the class, 28 per integer, +8 per element
-        self.assertEqual(objsize.get_deep_size(s1) + 28 + 4 + version_addition, objsize.get_deep_size(s2))
-        self.assertEqual(objsize.get_deep_size(s2) + 28 + 4 + version_addition, objsize.get_deep_size(s3))
-        self.assertEqual(objsize.get_deep_size(s1) + 56 + 8 + version_addition * 2, objsize.get_deep_size(s3))
-        # *2 for the num of variables in difference
+        self.assertEqual(s1_sz, objsize.get_deep_size(s1))
+        self.assertEqual(s2_sz, objsize.get_deep_size(s2))
+        self.assertEqual(s3_sz, objsize.get_deep_size(s3))
 
     def test_multi_obj(self):
         class MyClass(object):
@@ -192,10 +187,10 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_deep_size(obj))
 
         gc.collect()
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj, only_exclusive=True))
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
 
         fake_holder = [obj[2]]
         expected_sz -= sys.getsizeof(fake_holder[0])
 
         gc.collect()
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj, only_exclusive=True))
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))

@@ -1,5 +1,6 @@
 """
-Calculates the deep size of Python's objects.
+Traversal over Python's objects sub-tree and calculating
+the total size of the sub-tree (deep size).
 
 Author: Liran Funaro <funaro@cs.technion.ac.il>
 
@@ -20,21 +21,30 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import gc
 import sys
+import inspect
 
 
-def get_deep_size(*objs, only_exclusive=False):
+def traverse_bfs(*objs, marked: set or None=None):
     """
-    Calculates the deep size of all the arguments.
+    Traverse all the arguments' sub-tree.
+    This exclude `type` objects, i.e., where `isinstance(o, type)` is True.
 
-    :param objs: One or more object(s)
-    :param only_exclusive: If True, then only calculate objects that are exclusive
-        to this objects and/or its descendants.
-    :return: The object's deep size
+    Parameters
+    ----------
+    objs : object(s)
+        One or more object(s).
+    marked : set or None
+        An existing set for marked objects.
+        Objects that are in this set will not be traversed.
+        If a set is given, it will be updated with all the traversed objects.
+
+    Yields
+    ------
+    objects
+        The traversed objects, one by one.
     """
-    root_obj_ids = set(id(o) for o in objs)
-    marked = set()
-    sz = 0
-    collected = []
+    if marked is None:
+        marked = set()
 
     while objs:
         # Get the object's ids
@@ -49,28 +59,108 @@ def get_deep_size(*objs, only_exclusive=False):
         # Update the marked set with the ids so we will not traverse them again.
         marked.update(objs.keys())
 
-        if only_exclusive:
-            # Collect the objects
-            collected.extend(objs.values())
-        else:
-            # Calculate each object size
-            sz += sum(map(sys.getsizeof, objs.values()))
+        # Yield traversed objects
+        yield from objs.values()
 
         # Lookup all the object referred to by the object from the current round.
         # See: https://docs.python.org/3.7/library/gc.html#gc.get_referents
         objs = gc.get_referents(*objs.values())
 
-    if only_exclusive:
-        # Test for each object that all the object that refer to it is in the marked set or is a root
-        # See: https://docs.python.org/3.7/library/gc.html#gc.get_referrers
 
-        # We add the collected list to the marked items because it referrers all our objects
-        marked.add(id(collected))
-        # We first make sure that any "old" objects were collected
-        gc.collect()
+def traverse_exclusive_bfs(*objs, marked: set or None=None):
+    """
+    Traverse all the arguments' sub-tree, excluding non exclusive objects.
+    That is, objects that are referenced by objects that are not in this sub-tree.
 
-        sz = sum(map(sys.getsizeof,
-                     filter(lambda o: (id(o) in root_obj_ids) or (marked.issuperset(map(id, gc.get_referrers(o)))),
-                            collected)))
+    Parameters
+    ----------
+    objs : object(s)
+        One or more object(s).
+    marked : set or None
+        An existing set for marked objects.
+        Objects that are in this set will not be traversed.
+        If a set is given, it will be updated with all the traversed objects.
 
-    return sz
+    Yields
+    ------
+    objects
+        The traversed objects, one by one.
+
+    See Also
+    --------
+    traverse_bfs : to understand which objects are traversed.
+    """
+    if marked is None:
+        marked = set()
+
+    root_obj_ids = set(map(id, objs))
+    sub_tree = tuple(traverse_bfs(*objs, marked=marked))
+
+    # We add "frame" objects to the marked set.
+    # E.g., the current frame and inner lists that refer to the sub-tree.
+    roots = {id(objs), id(sub_tree), id(inspect.currentframe())}
+    marked.update(roots)
+
+    # Return true if a given object is in our root objects or was marked.
+    # We add the predicate frame to marked set.
+    def predicate(o):
+        if id(o) in root_obj_ids:
+            return True
+
+        cur_frame_id = id(inspect.currentframe())
+        roots.add(cur_frame_id)
+        marked.add(cur_frame_id)
+        return marked.issuperset(map(id, gc.get_referrers(o)))
+
+    # We first make sure that any "old" objects that may refer to our sub-tree were collected
+    gc.collect()
+
+    # Test for each object that all the object that refer to it is in the marked set or is a root
+    # See: https://docs.python.org/3.7/library/gc.html#gc.get_referrers
+    yield from filter(predicate, sub_tree)
+
+    # Remove the "frame" objects from the marked set.
+    marked.difference_update(roots)
+
+
+def get_deep_size(*objs):
+    """
+    Calculates the deep size of all the arguments.
+
+    Parameters
+    ----------
+    objs : object(s)
+        One or more object(s).
+
+    Returns
+    -------
+    int
+        The objects' deep size.
+
+    See Also
+    --------
+    traverse_bfs : to understand which objects are traversed.
+    """
+    return sum(map(sys.getsizeof, traverse_bfs(*objs)))
+
+
+def get_exclusive_deep_size(*objs):
+    """
+    Calculates the deep size of all the arguments, excluding non exclusive objects.
+
+    Parameters
+    ----------
+    objs : object(s)
+        One or more object(s).
+
+    Returns
+    -------
+    int
+        The objects' deep size.
+
+    See Also
+    --------
+    traverse_exclusive_bfs : to understand which objects are traversed.
+    """
+    marked = {id(objs)}
+    return sum(map(sys.getsizeof, traverse_exclusive_bfs(*objs, marked=marked)))
