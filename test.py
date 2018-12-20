@@ -178,7 +178,7 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs))
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs, *objs))
 
-    def test_unique(self):
+    def test_exclusive(self):
         import uuid
         import gc
         obj = [str(uuid.uuid4()) for _ in range(5)]
