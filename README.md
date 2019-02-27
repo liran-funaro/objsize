@@ -16,6 +16,18 @@ It is implemented without recursive calls for best performance.
 - Exclude non exclusive objects.
 - Traverse single/multiple objects(s) sub tree.
 
+[Pympler](https://pythonhosted.org/Pympler/) also supports determening an object deep size via `pympler.asizeof()`.
+There are two main differences between `objsize` and `pympler`.
+
+1. `objsize` has additional features:
+   * Traversing the object sub-tree: iterating all of the object's descendants one by one.
+   * Excluding non-exclusive objects. That is, objects that are also referenced from somewhere else in the program. This is true for calculating the object's deep size and for traversing its descendants.
+2. `objsize` has a simple and robust implementation with significantly fewer lines of code, compared to `pympler`.
+   The Pympler implementation uses recursion, and thus have to use a maximal depth argument to avoid reaching Python's max depth.
+   `objsize`, however, uses BFS which is more efficient and simple to follow.
+   Moreover, the Pympler implementation carefully takes care of any object type.
+   `objsize` archives the same goal with a simple and generic implementation, which has fewer lines of code.
+
 
 # Install
 
