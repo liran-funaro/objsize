@@ -1,5 +1,5 @@
 """
-Author: Liran Funaro <funaro@cs.technion.ac.il>
+Author: Liran Funaro <liran.funaro@gmail.com>
 
 Copyright (C) 2006-2018 Liran Funaro
 
@@ -25,10 +25,10 @@ setup(
     description="Traversal over Python's objects sub-tree and calculating "
                 "the total size of the sub-tree (deep size).",
     author="Liran Funaro",
-    author_email="fonaro+objsize@gmail.com",
+    author_email="liran.funaro+objsize@gmail.com",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url="https://github.com/fonaro/objsize",
+    url="https://github.com/liran-funaro/objsize",
     keywords='object-size recursive deep traversal object size debug deep-object-size',
     license='GPL',
     classifiers=[

@@ -2,7 +2,7 @@
 Traversal over Python's objects sub-tree and calculating
 the total size of the sub-tree (deep size).
 
-Author: Liran Funaro <funaro@cs.technion.ac.il>
+Author: Liran Funaro <liran.funaro@gmail.com>
 
 Copyright (C) 2006-2018 Liran Funaro
 
