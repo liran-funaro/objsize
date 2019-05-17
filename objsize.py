@@ -144,7 +144,7 @@ def get_deep_size(*objs) -> int:
     Returns
     -------
     int
-        The objects' deep size.
+        The objects' deep size in bytes.
 
     See Also
     --------
@@ -165,7 +165,7 @@ def get_exclusive_deep_size(*objs) -> int:
     Returns
     -------
     int
-        The objects' deep size.
+        The objects' deep size in bytes.
 
     See Also
     --------

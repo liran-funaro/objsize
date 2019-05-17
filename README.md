@@ -1,7 +1,7 @@
 # objsize
 
 Traversal over Python's objects sub-tree and calculating
-the total size of the sub-tree (deep size).
+the total size of the sub-tree in bytes (deep size).
 
 This module uses python internal GC implementation
 to traverse all decedent objects.
@@ -12,7 +12,7 @@ It is implemented without recursive calls for best performance.
 
 # Features
 
-- Calculate single/multiple object(s) deep size.
+- Calculate single/multiple object(s) deep size in bytes.
 - Exclude non exclusive objects.
 - Traverse single/multiple objects(s) sub tree.
 
@@ -38,7 +38,7 @@ pip install objsize
 
 # Basic Usage
 
-Calculate an object size including all its members.
+Calculate an object size including all its members in bytes.
 
 ```python
 >>> import objsize
@@ -55,7 +55,7 @@ It is possible to calculate the deep size of multiple objects by passing multipl
 
 # Complex Data
 
-`objsize` can calculate the size of an object's entire sub-tree
+`objsize` can calculate the size of an object's entire sub-tree in bytes
 regardless of the type of objects in it, and its depth.
 
 Here is a complex data structure, for example, that include a self reference:
