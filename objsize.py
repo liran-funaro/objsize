@@ -20,8 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import gc
-import sys
 import inspect
+import sys
 from typing import Optional, Iterable, Any
 
 
@@ -53,9 +53,13 @@ def traverse_bfs(*objs, marked: Optional[set] = None) -> Iterable[Any]:
 
         # Filter:
         #  - Object that are already marked (using the marked set).
+        #  - None - that one is a singleton
         #  - Type objects such as a class or a module as they are common among all objects.
+        #  - callable objects as they are common among all objects
         #  - Repeated objects (using dict notation).
-        objs = {o_id: o for o_id, o in objs if o_id not in marked and not isinstance(o, type)}
+        objs = {
+            o_id: o for o_id, o in objs if o_id not in marked and not (o is None or callable(o) or isinstance(o, type))
+        }
 
         # Update the marked set with the ids so we will not traverse them again.
         marked.update(objs.keys())

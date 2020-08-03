@@ -194,3 +194,25 @@ class TestDeepObjSize(unittest.TestCase):
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
+
+    def test_class_with_callable(self):
+        class UnderTest:
+            def __init__(self, func, s):
+                self._func, self._s = func, s
+
+        # None doesn't occupy extra space because it is a singleton
+        obj = UnderTest(None, None)
+        expected_sz = sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        # the string does occupy space
+        obj = UnderTest(None, 'x')
+        expected_sz += sys.getsizeof('x')
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        # A callable again doesn't occupy extra space because it already is also a singleton
+        obj = UnderTest(self.test_class_with_callable, 'x')
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
