@@ -45,7 +45,8 @@ def traverse_bfs(*objs, marked: Optional[set] = None) -> Iterable[Any]:
         The traversed objects, one by one.
     """
     if marked is None:
-        marked = set()
+        # None is a global singleton which doesn't need to be considered
+        marked = {id(None)}
 
     while objs:
         # Get the object's ids
@@ -53,12 +54,10 @@ def traverse_bfs(*objs, marked: Optional[set] = None) -> Iterable[Any]:
 
         # Filter:
         #  - Object that are already marked (using the marked set).
-        #  - None - that one is a singleton
         #  - Type objects such as a class or a module as they are common among all objects.
-        #  - callable objects as they are common among all objects
         #  - Repeated objects (using dict notation).
         objs = {
-            o_id: o for o_id, o in objs if o_id not in marked and not (o is None or callable(o) or isinstance(o, type))
+            o_id: o for o_id, o in objs if o_id not in marked and not isinstance(o, type)
         }
 
         # Update the marked set with the ids so we will not traverse them again.
