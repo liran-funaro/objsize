@@ -33,12 +33,17 @@ from collections import namedtuple
 import objsize
 
 
-def calc_class_obj_sz(obj, *field_names):
-    sz = sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
-    if sys.version_info[0] < 3:
-        # python 2 classes include extra string for each member.
-        sz += sum(map(sys.getsizeof, field_names))
-    return sz
+class TestClass:
+    def __init__(self, a):
+        self._a = a
+
+    @staticmethod
+    def sizeof(o):
+        return calc_class_obj_sz(o)
+
+
+def calc_class_obj_sz(obj):
+    return sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
 
 
 class TestDeepObjSize(unittest.TestCase):
@@ -87,7 +92,7 @@ class TestDeepObjSize(unittest.TestCase):
                 self.y = y
 
         point = MyClass(3, 4)
-        expected_size = (calc_class_obj_sz(point, 'x', 'y') +
+        expected_size = (calc_class_obj_sz(point) +
                          sys.getsizeof(3) +
                          sys.getsizeof(4))
         self.assertEqual(expected_size, objsize.get_deep_size(point))
@@ -173,7 +178,7 @@ class TestDeepObjSize(unittest.TestCase):
         objs = MyClass(strs[0], strs[1]), MyClass(strs[0], strs[2]), MyClass(strs[1], strs[2])
         expected_sz = sum(map(sys.getsizeof, strs))
 
-        expected_sz += sum(calc_class_obj_sz(o, 'x', 'y') for o in objs)
+        expected_sz += sum(calc_class_obj_sz(o) for o in objs)
 
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs))
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs, *objs))
@@ -195,24 +200,19 @@ class TestDeepObjSize(unittest.TestCase):
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
 
-    def test_class_with_callable(self):
-        class UnderTest:
-            def __init__(self, func, s):
-                self._func, self._s = func, s
-
+    def test_class_with_None(self):
         # None doesn't occupy extra space because it is a singleton
-        obj = UnderTest(None, None)
-        expected_sz = sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
+        obj = TestClass(None)
+        self.assertEqual(
+            TestClass.sizeof(obj),
+            objsize.get_deep_size(obj))
 
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+    def test_class_with_string(self):
+        runtime_int = 15
+        string = '=' * runtime_int
 
         # the string does occupy space
-        obj = UnderTest(None, 'x')
-        expected_sz += sys.getsizeof('x')
-
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
-
-        # A callable again doesn't occupy extra space because it already is also a singleton
-        obj = UnderTest(self.test_class_with_callable, 'x')
-
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+        obj = TestClass(string)
+        self.assertEqual(
+            TestClass.sizeof(obj) + sys.getsizeof(string),
+            objsize.get_deep_size(obj))
