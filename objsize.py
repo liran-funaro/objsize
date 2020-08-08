@@ -20,8 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import gc
-import inspect
 import sys
+import inspect
 from typing import Optional, Iterable, Any
 
 
@@ -45,8 +45,10 @@ def traverse_bfs(*objs, marked: Optional[set] = None) -> Iterable[Any]:
         The traversed objects, one by one.
     """
     if marked is None:
-        # None is a global singleton which doesn't need to be considered
-        marked = {id(None)}
+        marked = set()
+
+    # None shouldn't be included in size calculations because it's a singleton
+    marked.add(id(None))
 
     while objs:
         # Get the object's ids
@@ -56,9 +58,7 @@ def traverse_bfs(*objs, marked: Optional[set] = None) -> Iterable[Any]:
         #  - Object that are already marked (using the marked set).
         #  - Type objects such as a class or a module as they are common among all objects.
         #  - Repeated objects (using dict notation).
-        objs = {
-            o_id: o for o_id, o in objs if o_id not in marked and not isinstance(o, type)
-        }
+        objs = {o_id: o for o_id, o in objs if o_id not in marked and not isinstance(o, type)}
 
         # Update the marked set with the ids so we will not traverse them again.
         marked.update(objs.keys())
