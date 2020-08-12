@@ -5,8 +5,7 @@ the total size of the sub-tree in bytes (deep size).
 
 This module uses python internal GC implementation
 to traverse all decedent objects.
-It ignores type objects (i.e., `isinstance(o, type)`)
-such as classes and modules, as they are common among all objects.
+It attempts to ignore singletons (e.g., `None`) and type objects (i.e., classes and modules), as they are common among all objects.
 It is implemented without recursive calls for best performance.
 
 
