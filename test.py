@@ -41,6 +41,15 @@ def calc_class_obj_sz(obj, *field_names):
     return sz
 
 
+class TestClass:
+    def __init__(self, a):
+        self._a = a
+
+    @staticmethod
+    def sizeof(o):
+        return calc_class_obj_sz(o)
+
+
 class TestDeepObjSize(unittest.TestCase):
     """
     Thanks to bosswissam for the following list of tests.
@@ -194,3 +203,20 @@ class TestDeepObjSize(unittest.TestCase):
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
+
+    def test_class_with_None(self):
+        # None doesn't occupy extra space because it is a singleton
+        obj = TestClass(None)
+        self.assertEqual(
+            TestClass.sizeof(obj),
+            objsize.get_deep_size(obj))
+
+    def test_class_with_string(self):
+        runtime_int = 15
+        string = '=' * runtime_int
+
+        # the string does occupy space
+        obj = TestClass(string)
+        self.assertEqual(
+            TestClass.sizeof(obj) + sys.getsizeof(string),
+            objsize.get_deep_size(obj))

@@ -47,6 +47,9 @@ def traverse_bfs(*objs, marked: Optional[set] = None) -> Iterable[Any]:
     if marked is None:
         marked = set()
 
+    # None shouldn't be included in size calculations because it's a singleton
+    marked.add(id(None))
+
     while objs:
         # Get the object's ids
         objs = ((id(o), o) for o in objs)
