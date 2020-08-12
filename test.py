@@ -33,6 +33,14 @@ from collections import namedtuple
 import objsize
 
 
+def calc_class_obj_sz(obj, *field_names):
+    sz = sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
+    if sys.version_info[0] < 3:
+        # python 2 classes include extra string for each member.
+        sz += sum(map(sys.getsizeof, field_names))
+    return sz
+
+
 class TestClass:
     def __init__(self, a):
         self._a = a
@@ -40,10 +48,6 @@ class TestClass:
     @staticmethod
     def sizeof(o):
         return calc_class_obj_sz(o)
-
-
-def calc_class_obj_sz(obj):
-    return sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
 
 
 class TestDeepObjSize(unittest.TestCase):
@@ -92,7 +96,7 @@ class TestDeepObjSize(unittest.TestCase):
                 self.y = y
 
         point = MyClass(3, 4)
-        expected_size = (calc_class_obj_sz(point) +
+        expected_size = (calc_class_obj_sz(point, 'x', 'y') +
                          sys.getsizeof(3) +
                          sys.getsizeof(4))
         self.assertEqual(expected_size, objsize.get_deep_size(point))
@@ -178,7 +182,7 @@ class TestDeepObjSize(unittest.TestCase):
         objs = MyClass(strs[0], strs[1]), MyClass(strs[0], strs[2]), MyClass(strs[1], strs[2])
         expected_sz = sum(map(sys.getsizeof, strs))
 
-        expected_sz += sum(calc_class_obj_sz(o) for o in objs)
+        expected_sz += sum(calc_class_obj_sz(o, 'x', 'y') for o in objs)
 
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs))
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs, *objs))
