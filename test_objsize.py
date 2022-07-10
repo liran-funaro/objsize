@@ -3,7 +3,7 @@ Unittests for `objsize`.
 
 Author: Liran Funaro <liran.funaro@gmail.com>
 
-Copyright (C) 2006-2018 Liran Funaro
+Copyright (C) 2006-2022 Liran Funaro
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,11 +18,25 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import gc
+import random
 import sys
 import unittest
 from collections import namedtuple
 
 import objsize
+
+
+##################################################################
+# Helpers
+##################################################################
+
+
+def get_unique_strings(size=5):
+    import uuid
+    obj = [str(uuid.uuid4()) for _ in range(size)]
+    expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+    return obj, expected_sz
 
 
 def calc_class_obj_sz(obj, *field_names):
@@ -42,15 +56,19 @@ class FakeClass:
         return calc_class_obj_sz(o)
 
 
+##################################################################
+# Tests
+##################################################################
+
+
 class TestDeepObjSize(unittest.TestCase):
 
-    def test_exclusive(self):
-        import uuid
-        import gc
-        obj = [str(uuid.uuid4()) for _ in range(5)]
-        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
-
+    def test_unique_string(self):
+        obj, expected_sz = get_unique_strings(5)
         self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+    def test_exclusive(self):
+        obj, expected_sz = get_unique_strings(5)
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
@@ -62,11 +80,7 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
 
     def test_exclude(self):
-        import uuid
-        obj = [str(uuid.uuid4()) for _ in range(5)]
-        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
-
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+        obj, expected_sz = get_unique_strings(5)
 
         exclude = [obj[2]]
         expected_sz -= sys.getsizeof(exclude[0])
@@ -74,12 +88,7 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_deep_size(obj, exclude=exclude))
 
     def test_exclusive_exclude(self):
-        import uuid
-        import gc
-        obj = [str(uuid.uuid4()) for _ in range(5)]
-        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
-
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+        obj, expected_sz = get_unique_strings(5)
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
@@ -94,9 +103,7 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj, exclude=exclude))
 
     def test_size_func(self):
-        import uuid
-        obj = [str(uuid.uuid4()) for _ in range(5)]
-        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+        obj, expected_sz = get_unique_strings(5)
         obj.append("test")
 
         def size_func(o):
@@ -112,17 +119,19 @@ class TestDeepObjSize(unittest.TestCase):
         obj = FakeClass(None)
         self.assertEqual(
             FakeClass.sizeof(obj),
-            objsize.get_deep_size(obj))
+            objsize.get_deep_size(obj)
+        )
 
     def test_class_with_string(self):
-        runtime_int = 15
+        runtime_int = random.randint(50, 100)
         string = '=' * runtime_int
 
-        # the string does occupy space
+        # A string occupies space
         obj = FakeClass(string)
         self.assertEqual(
             FakeClass.sizeof(obj) + sys.getsizeof(string),
-            objsize.get_deep_size(obj))
+            objsize.get_deep_size(obj)
+        )
 
     """
     Thanks to bosswissam for the following list of tests.
@@ -155,8 +164,7 @@ class TestDeepObjSize(unittest.TestCase):
 
     def test_empty_list(self):
         empty_list = []
-        self.assertEqual(sys.getsizeof(empty_list),
-                         objsize.get_deep_size(empty_list))
+        self.assertEqual(sys.getsizeof(empty_list), objsize.get_deep_size(empty_list))
 
     def test_list_of_collections(self):
         collection_list = [[], {}, ()]
@@ -193,17 +201,21 @@ class TestDeepObjSize(unittest.TestCase):
                 self.y = y
 
         point = MyClass(3, 4)
-        expected_size = (calc_class_obj_sz(point, 'x', 'y') +
-                         sys.getsizeof(3) +
-                         sys.getsizeof(4))
+        expected_size = (
+                calc_class_obj_sz(point, 'x', 'y') +
+                sys.getsizeof(3) +
+                sys.getsizeof(4)
+        )
         self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_namedtuple(self):
         Point = namedtuple('Point', ['x', 'y'])
         point = Point(3, 4)
-        expected_size = (sys.getsizeof(point) +
-                         sys.getsizeof(3) +
-                         sys.getsizeof(4))
+        expected_size = (
+                sys.getsizeof(point) +
+                sys.getsizeof(3) +
+                sys.getsizeof(4)
+        )
         self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_subclass_of_namedtuple(self):
@@ -211,7 +223,7 @@ class TestDeepObjSize(unittest.TestCase):
             pass
 
         point = MyPoint(3, 4)
-        # namedtuple does not contains a dict.
+        # namedtuple does not contain a dict.
         # It is created on request and is not cached for later calls:
         # >>> point = MyPoint(3, 4)
         # >>> all_obj = {id(o) for o in gc.get_objects()}
@@ -220,9 +232,11 @@ class TestDeepObjSize(unittest.TestCase):
         # >>> all_obj = {id(o) for o in gc.get_objects()}
         # >>> id(point.__dict__) in all_obj
         # False
-        expected_size = (sys.getsizeof(point) +
-                         sys.getsizeof(3) +
-                         sys.getsizeof(4))
+        expected_size = (
+                sys.getsizeof(point) +
+                sys.getsizeof(3) +
+                sys.getsizeof(4)
+        )
         self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_subclass_of_namedtuple_with_slots(self):
@@ -230,9 +244,11 @@ class TestDeepObjSize(unittest.TestCase):
             __slots__ = ()
 
         point = MyPoint(3, 4)
-        expected_size = (sys.getsizeof(point) +
-                         sys.getsizeof(3) +
-                         sys.getsizeof(4))
+        expected_size = (
+                sys.getsizeof(point) +
+                sys.getsizeof(3) +
+                sys.getsizeof(4)
+        )
         self.assertEqual(expected_size, objsize.get_deep_size(point))
 
     def test_slots(self):

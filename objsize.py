@@ -4,7 +4,7 @@ the total size of the subtree (deep size).
 
 Author: Liran Funaro <liran.funaro@gmail.com>
 
-Copyright (C) 2006-2018 Liran Funaro
+Copyright (C) 2006-2022 Liran Funaro
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import collections
 import gc
 import inspect
 import sys
@@ -135,6 +136,16 @@ def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable
     marked.difference_update(roots)
 
 
+def __get_exclude_marked_set(exclude: Optional[Iterable] = None):
+    if exclude is None:
+        return None
+
+    marked = set()
+    it = traverse_bfs(*exclude, marked=marked)
+    collections.deque(it, maxlen=0)
+    return marked
+
+
 def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof) -> int:
     """
     Calculates the deep size of all the arguments.
@@ -157,10 +168,7 @@ def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.g
     --------
     traverse_bfs : to understand which objects are traversed.
     """
-    if exclude is not None:
-        marked = set(map(id, traverse_bfs(*exclude)))
-    else:
-        marked = None
+    marked = __get_exclude_marked_set(exclude)
     return sum(map(get_size_func, traverse_bfs(*objs, marked=marked)))
 
 
@@ -186,8 +194,5 @@ def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_
     --------
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
-    if exclude is not None:
-        marked = set(map(id, traverse_bfs(*exclude)))
-    else:
-        marked = None
+    marked = __get_exclude_marked_set(exclude)
     return sum(map(get_size_func, traverse_exclusive_bfs(*objs, marked=marked)))
