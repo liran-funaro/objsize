@@ -1,30 +1,22 @@
 """
-Thanks to bosswissam for the following list of tests.
-Taken from: https://github.com/bosswissam/pysize
+Unittests for `objsize`.
 
-The following tests are under MIT license.
+Author: Liran Funaro <liran.funaro@gmail.com>
 
-MIT License
+Copyright (C) 2006-2018 Liran Funaro
 
-Copyright (c) [2018] [Wissam Jarjoui]
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import sys
 import unittest
@@ -51,9 +43,94 @@ class TestClass:
 
 
 class TestDeepObjSize(unittest.TestCase):
+
+    def test_exclusive(self):
+        import uuid
+        import gc
+        obj = [str(uuid.uuid4()) for _ in range(5)]
+        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        gc.collect()
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
+
+        fake_holder = [obj[2]]
+        expected_sz -= sys.getsizeof(fake_holder[0])
+
+        gc.collect()
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
+
+    def test_exclude(self):
+        import uuid
+        obj = [str(uuid.uuid4()) for _ in range(5)]
+        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        exclude = [obj[2]]
+        expected_sz -= sys.getsizeof(exclude[0])
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, exclude=exclude))
+
+    def test_size_func(self):
+        import uuid
+        obj = [str(uuid.uuid4()) for _ in range(5)]
+        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+        obj.append("test")
+
+        def size_func(o):
+            if o == "test":
+                return 0
+            else:
+                return sys.getsizeof(o)
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, get_size_func=size_func))
+
+    def test_class_with_None(self):
+        # None doesn't occupy extra space because it is a singleton
+        obj = TestClass(None)
+        self.assertEqual(
+            TestClass.sizeof(obj),
+            objsize.get_deep_size(obj))
+
+    def test_class_with_string(self):
+        runtime_int = 15
+        string = '=' * runtime_int
+
+        # the string does occupy space
+        obj = TestClass(string)
+        self.assertEqual(
+            TestClass.sizeof(obj) + sys.getsizeof(string),
+            objsize.get_deep_size(obj))
+
     """
     Thanks to bosswissam for the following list of tests.
     Taken from: https://github.com/bosswissam/pysize
+
+    The following tests are under MIT license.
+
+    MIT License
+
+    Copyright (c) [2018] [Wissam Jarjoui]
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
     """
 
     def test_empty_list(self):
@@ -186,37 +263,3 @@ class TestDeepObjSize(unittest.TestCase):
 
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs))
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs, *objs))
-
-    def test_exclusive(self):
-        import uuid
-        import gc
-        obj = [str(uuid.uuid4()) for _ in range(5)]
-        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
-
-        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
-
-        gc.collect()
-        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
-
-        fake_holder = [obj[2]]
-        expected_sz -= sys.getsizeof(fake_holder[0])
-
-        gc.collect()
-        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
-
-    def test_class_with_None(self):
-        # None doesn't occupy extra space because it is a singleton
-        obj = TestClass(None)
-        self.assertEqual(
-            TestClass.sizeof(obj),
-            objsize.get_deep_size(obj))
-
-    def test_class_with_string(self):
-        runtime_int = 15
-        string = '=' * runtime_int
-
-        # the string does occupy space
-        obj = TestClass(string)
-        self.assertEqual(
-            TestClass.sizeof(obj) + sys.getsizeof(string),
-            objsize.get_deep_size(obj))

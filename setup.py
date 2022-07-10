@@ -20,10 +20,10 @@ from setuptools import setup
 
 setup(
     name="objsize",
-    version="0.3.3",
+    version="0.4",
     py_modules=['objsize'],
-    description="Traversal over Python's objects sub-tree and calculating "
-                "the total size of the sub-tree (deep size).",
+    description="Traversal over Python's objects subtree and calculate the total size of the subtree in bytes "
+                "(deep size).",
     author="Liran Funaro",
     author_email="liran.funaro+objsize@gmail.com",
     long_description=open('README.md').read(),
