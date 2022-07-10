@@ -1,5 +1,7 @@
 # objsize
 
+[![Coverage Status](https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master)](https://coveralls.io/github/liran-funaro/objsize?branch=master)
+
 Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
 
 This module traverses all child objects using Python's internal GC implementation.
