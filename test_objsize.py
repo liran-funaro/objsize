@@ -33,7 +33,7 @@ def calc_class_obj_sz(obj, *field_names):
     return sz
 
 
-class TestClass:
+class FakeClass:
     def __init__(self, a):
         self._a = a
 
@@ -73,6 +73,26 @@ class TestDeepObjSize(unittest.TestCase):
 
         self.assertEqual(expected_sz, objsize.get_deep_size(obj, exclude=exclude))
 
+    def test_exclusive_exclude(self):
+        import uuid
+        import gc
+        obj = [str(uuid.uuid4()) for _ in range(5)]
+        expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        gc.collect()
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
+
+        fake_holder = [obj[2]]
+        expected_sz -= sys.getsizeof(fake_holder[0])
+
+        exclude = [obj[1]]
+        expected_sz -= sys.getsizeof(exclude[0])
+
+        gc.collect()
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj, exclude=exclude))
+
     def test_size_func(self):
         import uuid
         obj = [str(uuid.uuid4()) for _ in range(5)]
@@ -89,9 +109,9 @@ class TestDeepObjSize(unittest.TestCase):
 
     def test_class_with_None(self):
         # None doesn't occupy extra space because it is a singleton
-        obj = TestClass(None)
+        obj = FakeClass(None)
         self.assertEqual(
-            TestClass.sizeof(obj),
+            FakeClass.sizeof(obj),
             objsize.get_deep_size(obj))
 
     def test_class_with_string(self):
@@ -99,9 +119,9 @@ class TestDeepObjSize(unittest.TestCase):
         string = '=' * runtime_int
 
         # the string does occupy space
-        obj = TestClass(string)
+        obj = FakeClass(string)
         self.assertEqual(
-            TestClass.sizeof(obj) + sys.getsizeof(string),
+            FakeClass.sizeof(obj) + sys.getsizeof(string),
             objsize.get_deep_size(obj))
 
     """
