@@ -18,25 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from setuptools import setup
 
+# Used for editable installation
 setup(
     name="objsize",
     version="0.5.0",
     py_modules=["objsize"],
-    description="Traversal over Python's objects subtree and calculate the total size of the subtree in bytes "
-    "(deep size).",
-    author="Liran Funaro",
-    author_email="liran.funaro+objsize@gmail.com",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/liran-funaro/objsize",
-    keywords="object-size recursive deep traversal object size debug deep-object-size",
-    license="GPL",
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: GNU General Public License (GPL)",
-        "Operating System :: OS Independent",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-    ],
 )
