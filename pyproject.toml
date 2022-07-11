@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 [build-system]
-requires      = ["setuptools>=61.0.0", "wheel"]
+requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,7 +25,7 @@ version = "0.5.0"
 description = "Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size)."
 readme = "README.md"
 authors = [{ name = "Liran Funaro", email = "liran.funaro@gmail.com" }]
-license = { file = "LICENSE.txt" }
+license = { text = "GPL-3.0-or-later" }
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -35,7 +35,7 @@ classifiers = [
 ]
 keywords = ["object-size", "recursive", "deep", "traversal", "object", "size", "debug", "deep-object-size"]
 dependencies = []
-requires-python = ">=3"
+requires-python = ">=3.7"
 
 [project.optional-dependencies]
 dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]

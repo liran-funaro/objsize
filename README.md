@@ -200,4 +200,4 @@ MyClass
 ```
 
 # License
-[GPL](LICENSE.txt)
+[GPL](LICENSE)
