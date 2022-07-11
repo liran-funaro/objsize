@@ -21,6 +21,6 @@ from setuptools import setup
 # Used for editable installation
 setup(
     name="objsize",
-    version="0.5.0",
+    version="0.5.1",
     py_modules=["objsize"],
 )

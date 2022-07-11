@@ -21,7 +21,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "objsize"
-version = "0.5.0"
+version = "0.5.1"
 description = "Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size)."
 readme = "README.md"
 authors = [{ name = "Liran Funaro", email = "liran.funaro@gmail.com" }]
@@ -44,7 +44,7 @@ dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
 Homepage = "https://github.com/liran-funaro/objsize"
 
 [tool.bumpver]
-current_version = "0.5.0"
+current_version = "0.5.1"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true

@@ -37,7 +37,7 @@ There are two main differences between `objsize` and `pympler`.
 # Install
 
 ```bash
-pip install objsize=0.5.0
+pip install objsize=0.5.1
 ```
 
 # Basic Usage
