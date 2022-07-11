@@ -37,7 +37,7 @@ There are two main differences between `objsize` and `pympler`.
 # Install
 
 ```bash
-pip install objsize
+pip install objsize=0.4.0
 ```
 
 # Basic Usage
@@ -102,7 +102,7 @@ Or simply let `objsize` know which objects to exclude:
 # Special Cases
 Some objects handle their data in a way that prevents Python's GC from detecting it.
 The user can supply a special way to calculate the actual size of these objects.
-For example, using a simple calculation of this object size won't work for `torch.Tensor`.
+For example, using a simple calculation of the object size won't work for `torch.Tensor`.
 
 ```python
 >>> import torch
@@ -149,8 +149,8 @@ def get_referents_torch(*objs):
 
 def filter_func(o):
     # Torch storage points to another meta storage that is
-    # already included in outer storage calculation, so we
-    # need to filter it.
+    # already included in the outer storage calculation, 
+    # so we need to filter it.
     # Also, `torch.dtype` is a common object like Python's types.
     return not isinstance(o, (type, torch.storage._UntypedStorage, torch.dtype))
 ```

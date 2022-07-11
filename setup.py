@@ -20,17 +20,17 @@ from setuptools import setup
 
 setup(
     name="objsize",
-    version="0.4",
-    py_modules=['objsize'],
+    version="0.4.0",
+    py_modules=["objsize"],
     description="Traversal over Python's objects subtree and calculate the total size of the subtree in bytes "
-                "(deep size).",
+    "(deep size).",
     author="Liran Funaro",
     author_email="liran.funaro+objsize@gmail.com",
-    long_description=open('README.md').read(),
-    long_description_content_type='text/markdown',
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     url="https://github.com/liran-funaro/objsize",
-    keywords='object-size recursive deep traversal object size debug deep-object-size',
-    license='GPL',
+    keywords="object-size recursive deep traversal object size debug deep-object-size",
+    license="GPL",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Development Status :: 4 - Beta",

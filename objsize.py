@@ -23,15 +23,19 @@ import collections
 import gc
 import inspect
 import sys
-from typing import Optional, Iterable, Any, Set
+from typing import Any, Iterable, Optional, Set
 
 
 def default_object_filter(o: Any) -> bool:
     return not isinstance(o, type)
 
 
-def traverse_bfs(*objs, marked: Optional[Set[int]] = None,
-                 get_referents_func=gc.get_referents, filter_func=default_object_filter) -> Iterable[Any]:
+def traverse_bfs(
+    *objs,
+    marked: Optional[Set[int]] = None,
+    get_referents_func=gc.get_referents,
+    filter_func=default_object_filter
+) -> Iterable[Any]:
     """
     Traverse all the arguments' subtree.
     By default, this excludes `type` objects, i.e., where `isinstance(o, type)` is True.
@@ -87,8 +91,12 @@ def traverse_bfs(*objs, marked: Optional[Set[int]] = None,
         objs = get_referents_func(*objs.values())
 
 
-def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None,
-                           get_referents_func=gc.get_referents, filter_func=default_object_filter) -> Iterable[Any]:
+def traverse_exclusive_bfs(
+    *objs,
+    marked: Optional[Set[int]] = None,
+    get_referents_func=gc.get_referents,
+    filter_func=default_object_filter
+) -> Iterable[Any]:
     """
     Traverse all the arguments' subtree, excluding non-exclusive objects.
     That is, objects that are referenced by objects that are not in this subtree.
@@ -122,7 +130,14 @@ def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None,
 
     # We have to complete the entire traverse, so we will have
     # a complete marked set.
-    subtree = tuple(traverse_bfs(*objs, marked=marked, get_referents_func=get_referents_func, filter_func=filter_func))
+    subtree = tuple(
+        traverse_bfs(
+            *objs,
+            marked=marked,
+            get_referents_func=get_referents_func,
+            filter_func=filter_func
+        )
+    )
 
     # We add the current frame and `subtree` objects to the marked set.
     # They refer to objects in our subtree which may cause them to
@@ -164,8 +179,13 @@ def __get_exclude_marked_set(exclude: Optional[Iterable] = None):
     return marked
 
 
-def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof,
-                  get_referents_func=gc.get_referents, filter_func=default_object_filter) -> int:
+def get_deep_size(
+    *objs,
+    exclude: Optional[Iterable] = None,
+    get_size_func=sys.getsizeof,
+    get_referents_func=gc.get_referents,
+    filter_func=default_object_filter
+) -> int:
     """
     Calculates the deep size of all the arguments.
 
@@ -193,12 +213,22 @@ def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.g
     traverse_bfs : to understand which objects are traversed.
     """
     marked = __get_exclude_marked_set(exclude)
-    it = traverse_bfs(*objs, marked=marked, get_referents_func=get_referents_func, filter_func=filter_func)
+    it = traverse_bfs(
+        *objs,
+        marked=marked,
+        get_referents_func=get_referents_func,
+        filter_func=filter_func
+    )
     return sum(map(get_size_func, it))
 
 
-def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof,
-                            get_referents_func=gc.get_referents, filter_func=default_object_filter) -> int:
+def get_exclusive_deep_size(
+    *objs,
+    exclude: Optional[Iterable] = None,
+    get_size_func=sys.getsizeof,
+    get_referents_func=gc.get_referents,
+    filter_func=default_object_filter
+) -> int:
     """
     Calculates the deep size of all the arguments, excluding non-exclusive objects.
 
@@ -225,5 +255,10 @@ def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
     marked = __get_exclude_marked_set(exclude)
-    it = traverse_exclusive_bfs(*objs, marked=marked, get_referents_func=get_referents_func, filter_func=filter_func)
+    it = traverse_exclusive_bfs(
+        *objs,
+        marked=marked,
+        get_referents_func=get_referents_func,
+        filter_func=filter_func
+    )
     return sum(map(get_size_func, it))
