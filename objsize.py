@@ -26,10 +26,15 @@ import sys
 from typing import Optional, Iterable, Any, Set
 
 
-def traverse_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable[Any]:
+def default_object_filter(o: Any) -> bool:
+    return not isinstance(o, type)
+
+
+def traverse_bfs(*objs, marked: Optional[Set[int]] = None,
+                 get_referents_func=gc.get_referents, filter_func=default_object_filter) -> Iterable[Any]:
     """
     Traverse all the arguments' subtree.
-    This excludes `type` objects, i.e., where `isinstance(o, type)` is True.
+    By default, this excludes `type` objects, i.e., where `isinstance(o, type)` is True.
 
     Parameters
     ----------
@@ -39,6 +44,13 @@ def traverse_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable[Any]:
         An existing set of marked objects.
         Objects that are in this set will not be traversed.
         If a set is given, it will be updated with all the traversed objects.
+    get_referents_func : callable
+        Receives any number of objects and returns iterable over the objects that are referred by these objects.
+        Default: `gc.get_referents()`.
+        See: https://docs.python.org/3/library/gc.html#gc.get_referents
+    filter_func : callable
+        Receives an objects and return `True` if the object---and its subtree---should be traversed.
+        Default: `lambda o: not isinstance(o, type)`.
 
     Yields
     ------
@@ -59,7 +71,11 @@ def traverse_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable[Any]:
         #  - Object that are already marked (using the marked set).
         #  - Type objects such as a class or a module as they are common among all objects.
         #  - Repeated objects (using dict notation).
-        objs = {o_id: o for o_id, o in objs if o_id not in marked and not isinstance(o, type)}
+        objs = {o_id: o for o_id, o in objs if o_id not in marked and filter_func(o)}
+
+        # We stop when there are no new valid objects to traverse.
+        if not objs:
+            break
 
         # Update the marked set with the ids, so we will not traverse them again.
         marked.update(objs.keys())
@@ -68,11 +84,11 @@ def traverse_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable[Any]:
         yield from objs.values()
 
         # Lookup all the object referred to by the object from the current round.
-        # See: https://docs.python.org/3.7/library/gc.html#gc.get_referents
-        objs = gc.get_referents(*objs.values())
+        objs = get_referents_func(*objs.values())
 
 
-def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable[Any]:
+def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None,
+                           get_referents_func=gc.get_referents, filter_func=default_object_filter) -> Iterable[Any]:
     """
     Traverse all the arguments' subtree, excluding non-exclusive objects.
     That is, objects that are referenced by objects that are not in this subtree.
@@ -82,9 +98,11 @@ def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable
     objs : object(s)
         One or more object(s).
     marked : set, optional
-        An existing set of marked objects.
-        Objects that are in this set will not be traversed.
-        If a set is given, it will be updated with all the traversed objects.
+        See `traverse_bfs()`.
+    get_referents_func : callable
+        See `traverse_bfs()`.
+    filter_func : callable
+        See `traverse_bfs()`.
 
     Yields
     ------
@@ -104,7 +122,7 @@ def traverse_exclusive_bfs(*objs, marked: Optional[Set[int]] = None) -> Iterable
 
     # We have to complete the entire traverse, so we will have
     # a complete marked set.
-    subtree = tuple(traverse_bfs(*objs, marked=marked))
+    subtree = tuple(traverse_bfs(*objs, marked=marked, get_referents_func=get_referents_func, filter_func=filter_func))
 
     # We add the current frame and `subtree` objects to the marked set.
     # They refer to objects in our subtree which may cause them to
@@ -146,7 +164,8 @@ def __get_exclude_marked_set(exclude: Optional[Iterable] = None):
     return marked
 
 
-def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof) -> int:
+def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof,
+                  get_referents_func=gc.get_referents, filter_func=default_object_filter) -> int:
     """
     Calculates the deep size of all the arguments.
 
@@ -157,7 +176,12 @@ def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.g
     exclude : iterable, optional
         Iterable of objects to exclude from this size calculation.
     get_size_func : function, optional
-        A function that determines the object size (default: `sys.getsizeof()`)
+        A function that determines the object size.
+        Default: `sys.getsizeof()`
+    get_referents_func : callable
+        See `traverse_bfs()`.
+    filter_func : callable
+        See `traverse_bfs()`.
 
     Returns
     -------
@@ -169,10 +193,12 @@ def get_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.g
     traverse_bfs : to understand which objects are traversed.
     """
     marked = __get_exclude_marked_set(exclude)
-    return sum(map(get_size_func, traverse_bfs(*objs, marked=marked)))
+    it = traverse_bfs(*objs, marked=marked, get_referents_func=get_referents_func, filter_func=filter_func)
+    return sum(map(get_size_func, it))
 
 
-def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof) -> int:
+def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_func=sys.getsizeof,
+                            get_referents_func=gc.get_referents, filter_func=default_object_filter) -> int:
     """
     Calculates the deep size of all the arguments, excluding non-exclusive objects.
 
@@ -181,9 +207,13 @@ def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_
     objs : object(s)
         One or more object(s).
     exclude : iterable, optional
-        Iterable of objects to exclude from this size calculation.
+        See `get_deep_size()`.
     get_size_func : function, optional
-        A function that determines the object size (default: `sys.getsizeof()`)
+        See `get_deep_size()`.
+    get_referents_func : callable
+        See `traverse_bfs()`.
+    filter_func : callable
+        See `traverse_bfs()`.
 
     Returns
     -------
@@ -195,4 +225,5 @@ def get_exclusive_deep_size(*objs, exclude: Optional[Iterable] = None, get_size_
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
     marked = __get_exclude_marked_set(exclude)
-    return sum(map(get_size_func, traverse_exclusive_bfs(*objs, marked=marked)))
+    it = traverse_exclusive_bfs(*objs, marked=marked, get_referents_func=get_referents_func, filter_func=filter_func)
+    return sum(map(get_size_func, it))

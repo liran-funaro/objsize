@@ -24,6 +24,8 @@ import sys
 import unittest
 from collections import namedtuple
 
+from typing import List, Any
+
 import objsize
 
 
@@ -32,19 +34,17 @@ import objsize
 ##################################################################
 
 
-def get_unique_strings(size=5):
+def get_unique_strings(size=5) -> List[Any]:
     import uuid
-    obj = [str(uuid.uuid4()) for _ in range(size)]
-    expected_sz = sys.getsizeof(obj) + sum(map(sys.getsizeof, obj))
-    return obj, expected_sz
+    return [str(uuid.uuid4()) for _ in range(size)]
 
 
-def calc_class_obj_sz(obj, *field_names):
-    sz = sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
-    if sys.version_info[0] < 3:
-        # python 2 classes include extra string for each member.
-        sz += sum(map(sys.getsizeof, field_names))
-    return sz
+def get_flat_list_expected_size(lst):
+    return sys.getsizeof(lst) + sum(map(sys.getsizeof, lst))
+
+
+def calc_class_obj_sz(obj):
+    return sys.getsizeof(obj) + sys.getsizeof(obj.__dict__)
 
 
 class FakeClass:
@@ -64,11 +64,13 @@ class FakeClass:
 class TestDeepObjSize(unittest.TestCase):
 
     def test_unique_string(self):
-        obj, expected_sz = get_unique_strings(5)
+        obj = get_unique_strings(5)
+        expected_sz = get_flat_list_expected_size(obj)
         self.assertEqual(expected_sz, objsize.get_deep_size(obj))
 
     def test_exclusive(self):
-        obj, expected_sz = get_unique_strings(5)
+        obj = get_unique_strings(5)
+        expected_sz = get_flat_list_expected_size(obj)
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
@@ -80,7 +82,8 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
 
     def test_exclude(self):
-        obj, expected_sz = get_unique_strings(5)
+        obj = get_unique_strings(5)
+        expected_sz = get_flat_list_expected_size(obj)
 
         exclude = [obj[2]]
         expected_sz -= sys.getsizeof(exclude[0])
@@ -88,7 +91,8 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_deep_size(obj, exclude=exclude))
 
     def test_exclusive_exclude(self):
-        obj, expected_sz = get_unique_strings(5)
+        obj = get_unique_strings(5)
+        expected_sz = get_flat_list_expected_size(obj)
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
@@ -103,8 +107,9 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj, exclude=exclude))
 
     def test_size_func(self):
-        obj, expected_sz = get_unique_strings(5)
+        obj = get_unique_strings(5)
         obj.append("test")
+        expected_sz = get_flat_list_expected_size(obj) - sys.getsizeof("test")
 
         def size_func(o):
             if o == "test":
@@ -113,6 +118,35 @@ class TestDeepObjSize(unittest.TestCase):
                 return sys.getsizeof(o)
 
         self.assertEqual(expected_sz, objsize.get_deep_size(obj, get_size_func=size_func))
+
+    def test_referents_func(self):
+        obj = get_unique_strings(5)
+        expected_sz = get_flat_list_expected_size(obj)
+
+        with_additional_str = obj[0]
+        additional_obj = "additional"
+        expected_sz += sys.getsizeof(additional_obj)
+
+        def referents_func(*objs):
+            yield from gc.get_referents(*objs)
+            for o in objs:
+                if o == with_additional_str:
+                    yield additional_obj
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, get_referents_func=referents_func))
+
+    def test_filter_func(self):
+        obj = get_unique_strings(5)
+        subtree = get_unique_strings(3)
+        obj.append(subtree)
+
+        # We count subtree twice, then remove it once
+        expected_sz = get_flat_list_expected_size(obj) - sys.getsizeof(subtree)
+
+        def filter_func(o):
+            return objsize.default_object_filter(o) and o != subtree
+
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, filter_func=filter_func))
 
     def test_class_with_None(self):
         # None doesn't occupy extra space because it is a singleton
@@ -202,7 +236,7 @@ class TestDeepObjSize(unittest.TestCase):
 
         point = MyClass(3, 4)
         expected_size = (
-                calc_class_obj_sz(point, 'x', 'y') +
+                calc_class_obj_sz(point) +
                 sys.getsizeof(3) +
                 sys.getsizeof(4)
         )
@@ -295,7 +329,7 @@ class TestDeepObjSize(unittest.TestCase):
         objs = MyClass(strs[0], strs[1]), MyClass(strs[0], strs[2]), MyClass(strs[1], strs[2])
         expected_sz = sum(map(sys.getsizeof, strs))
 
-        expected_sz += sum(calc_class_obj_sz(o, 'x', 'y') for o in objs)
+        expected_sz += sum(calc_class_obj_sz(o) for o in objs)
 
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs))
         self.assertEqual(expected_sz, objsize.get_deep_size(*objs, *objs))

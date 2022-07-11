@@ -15,7 +15,11 @@ It is implemented without recursive calls for high performance.
 - Calculate objects' (deep) size in bytes
 - Exclude non-exclusive objects
 - Exclude specified objects
-- Allow the user to specify how to handle a specific type's size calculation
+- Allow the user to specify unique handlers for:
+  - Object's size calculation
+  - Object's referents (i.e., its children)
+  - Object filter (skip specific objects)
+
 
 [Pympler](https://pythonhosted.org/Pympler/) also supports determining an object deep size via `pympler.asizeof()`.
 There are two main differences between `objsize` and `pympler`.
@@ -35,7 +39,6 @@ There are two main differences between `objsize` and `pympler`.
 ```bash
 pip install objsize
 ```
-
 
 # Basic Usage
 
@@ -96,22 +99,18 @@ Or simply let `objsize` know which objects to exclude:
 ```
 
 
-# Special Objects
+# Special Cases
 Some objects handle their data in a way that prevents Python's GC from detecting it.
 The user can supply a special way to calculate the actual size of these objects.
+For example, using a simple calculation of this object size won't work for `torch.Tensor`.
 
 ```python
-import torch
-t = torch.rand(200)
-```
-
-Simply calculating this object size won't work:
-```python
->>> objsize.get_deep_size(t)
+>>> import torch
+>>> objsize.get_deep_size(torch.rand(200))
 72
 ```
 
-So the user can define its own handler for such cases:
+So the user can define its own size calculation handler for such cases:
 ```python
 import sys
 import torch
@@ -125,8 +124,47 @@ def get_size_of_torch(o):
 
 Then use it as follows:
 ```python
->>> objsize.get_deep_size(t, get_size_func=get_size_of_torch)
+>>> import torch
+>>> objsize.get_deep_size(
+...   torch.rand(200),
+...   get_size_func=get_size_of_torch
+... )
 848
+```
+
+However, this neglects the object's internal structure.
+The user can help `objsize` to find the object's hidden storage by supplying it with its own referent and filter functions:
+```python
+import gc
+import torch
+
+def get_referents_torch(*objs):
+    # Yield all native referents
+    yield from gc.get_referents(*objs)
+    
+    for o in objs:
+        # If the object is a torch tensor, then also yield its storage
+        if isinstance(o, torch.Tensor):
+            yield o.storage()
+
+def filter_func(o):
+    # Torch storage points to another meta storage that is
+    # already included in outer storage calculation, so we
+    # need to filter it.
+    # Also, `torch.dtype` is a common object like Python's types.
+    return not isinstance(o, (type, torch.storage._UntypedStorage, torch.dtype))
+```
+
+
+Then use these as follows:
+```python
+>>> import torch
+>>> objsize.get_deep_size(
+...   torch.rand(200),
+...   get_referents_func=get_referents_torch, 
+...   filter_func=filter_func
+... )
+1024
 ```
 
 # Traversal
