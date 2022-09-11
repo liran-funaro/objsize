@@ -36,7 +36,7 @@ import inspect
 import sys
 from typing import Any, Iterable, Optional, Set
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 
 def default_object_filter(o: Any) -> bool:
