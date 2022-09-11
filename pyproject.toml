@@ -1,19 +1,30 @@
 # Author: Liran Funaro <liran.funaro@gmail.com>
 #
-# Copyright (C) 2006-2022 Liran Funaro
+# Copyright (c) 2006-2022, Liran Funaro.
+# All rights reserved.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the
+#    names of its contributors may be used to endorse or promote products
+#    derived from this software without specific prior written permission.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 [build-system]
 requires = ["setuptools>=61.0.0", "wheel"]
@@ -25,11 +36,11 @@ version = "0.5.1"
 description = "Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size)."
 readme = "README.md"
 authors = [{ name = "Liran Funaro", email = "liran.funaro@gmail.com" }]
-license = { text = "GPL-3.0-or-later" }
+license = { text = "BSD-3-Clause" }
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License (GPL)",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
@@ -38,27 +49,38 @@ dependencies = []
 requires-python = ">=3.7"
 
 [project.optional-dependencies]
-dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
+dev = ["black", "bumpver", "isort", "pip-tools", "pytest", "pytest-cov", "coveralls"]
 
 [project.urls]
 Homepage = "https://github.com/liran-funaro/objsize"
 
 [tool.bumpver]
 current_version = "0.5.1"
-version_pattern = "MAJOR.MINOR.PATCH"
+version_pattern = "MAJOR.MINOR.PATCH[-TAG]"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true
-tag = false
+tag = true
 push = false
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = [
-    'current_version = "{version}"',
-    'version = "{version}"',
+    "current_version = \"{version}\"",
+    "version = \"{version}\"",
+    "Copyright (c) 2006-YYYY, Liran Funaro.",
+]
+"README.md" = [
+    "{version}",
+    "Copyright (c) 2006-YYYY, Liran Funaro.",
+]
+"LICENSE" = [
+    "Copyright (c) 2006-YYYY, Liran Funaro.",
+]
+"*.py" = [
+    "Copyright (c) 2006-YYYY, Liran Funaro.",
 ]
 "setup.py" = [
     "{version}",
 ]
-"README.md" = [
-    "{version}",
+"objsize.py" = [
+    "^__version__ = \"{version}\"$",
 ]
