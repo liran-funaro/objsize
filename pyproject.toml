@@ -69,7 +69,7 @@ push = false
     "Copyright (c) 2006-YYYY, Liran Funaro.",
 ]
 "README.md" = [
-    "{version}",
+    "objsize=={version}",
     "Copyright (c) 2006-YYYY, Liran Funaro.",
 ]
 "LICENSE" = [
@@ -79,7 +79,7 @@ push = false
     "Copyright (c) 2006-YYYY, Liran Funaro.",
 ]
 "setup.py" = [
-    "{version}",
+    "version=\"{version}\"",
 ]
 "objsize.py" = [
     "^__version__ = \"{version}\"$",

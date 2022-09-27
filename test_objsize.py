@@ -32,12 +32,15 @@ POSSIBILITY OF SUCH DAMAGE.
 import gc
 import random
 import sys
+import threading
 import unittest
 import uuid
+import weakref
 from collections import namedtuple
 from typing import Any, List
 
 import objsize
+
 
 ##################################################################
 # Helpers
@@ -79,6 +82,7 @@ class TestDeepObjSize(unittest.TestCase):
     def test_exclusive(self):
         obj = get_unique_strings(5)
         expected_sz = get_flat_list_expected_size(obj)
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
 
         gc.collect()
         self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj))
@@ -178,6 +182,62 @@ class TestDeepObjSize(unittest.TestCase):
         self.assertEqual(
             FakeClass.sizeof(obj) + sys.getsizeof(string), objsize.get_deep_size(obj)
         )
+
+    def test_with_function(self):
+        obj = {"func": lambda x: x}
+        without_functions = objsize.get_deep_size(
+            obj, filter_func=objsize.shared_object_or_function_filter
+        )
+        with_functions = objsize.get_deep_size(
+            obj, filter_func=objsize.shared_object_filter
+        )
+        self.assertGreater(with_functions, without_functions)
+
+    def test_size_of_weak_ref(self):
+        class Foo(list):
+            pass
+
+        obj = Foo(get_unique_strings(5))
+        expected_sz = get_flat_list_expected_size(obj)
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj))
+
+        def get_weakref_referents(*objs):
+            yield from gc.get_referents(*objs)
+
+            for o in objs:
+                if type(o) in weakref.ProxyTypes:
+                    try:
+                        yield o.__repr__.__self__
+                    except ReferenceError:
+                        pass
+
+        wait_event = threading.Event()
+        obj_proxy = weakref.proxy(obj, lambda value: wait_event.set())
+        proxy_sz = sys.getsizeof(obj_proxy)
+
+        self.assertEqual(proxy_sz, objsize.get_deep_size(obj_proxy))
+        self.assertEqual(
+            proxy_sz + expected_sz,
+            objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents),
+        )
+        del obj
+
+        gc.collect()
+        wait_event.wait()
+
+        self.assertEqual(
+            proxy_sz,
+            objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents),
+        )
+
+    def test_get_exclude_test(self):
+        obj1 = [1]
+        exclude_set = objsize.get_exclude_set(obj1)
+        previous_sz = len(exclude_set)
+
+        obj2 = [2]
+        exclude_set = objsize.get_exclude_set(obj2, exclude_set=exclude_set)
+        self.assertEqual(previous_sz + 1, len(exclude_set))
 
     """
     Thanks to bosswissam for the following list of tests.
