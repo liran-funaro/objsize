@@ -150,8 +150,10 @@ You can achieve this by providing an alternative filter function.
 986
 ```
 
-* Note that using this filter function (`objsize.shared_object_filter_with_functions`) will also count
-  shared functions and lambdas.
+Notes:
+
+* The default filter function is `objsize.shared_object_or_function_filter`.
+* When using `objsize.shared_object_filter`, shared functions and lambdas are also counted.
 
 # Special Cases
 
@@ -220,7 +222,9 @@ def filter_func(o):
     # already included in the outer storage calculation, 
     # so we need to filter it.
     # Also, `torch.dtype` is a common object like Python's types.
-    return not objsize.safe_is_instance(o, (type, torch.storage._UntypedStorage, torch.dtype))
+    return not objsize.safe_is_instance(o, (
+        *objsize.SharedObjectOrFunctionType, torch.storage._UntypedStorage, torch.dtype
+    ))
 ```
 
 Then use these as follows:
