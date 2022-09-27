@@ -32,6 +32,6 @@ from setuptools import setup
 # Used for editable installation
 setup(
     name="objsize",
-    version="0.5.2",
+    version="0.6.0",
     py_modules=["objsize"],
 )
