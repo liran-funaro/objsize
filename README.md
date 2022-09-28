@@ -153,7 +153,8 @@ You can achieve this by providing an alternative filter function.
 Notes:
 
 * The default filter function is `objsize.shared_object_or_function_filter`.
-* When using `objsize.shared_object_filter`, shared functions and lambdas are also counted.
+* When using `objsize.shared_object_filter`, shared functions and lambdas are also counted, but builtin functions are
+  still excluded.
 
 # Special Cases
 
@@ -213,7 +214,7 @@ def get_referents_torch(*objs):
 
     for o in objs:
         # If the object is a torch tensor, then also yield its storage
-        if objsize.safe_is_instance(o, torch.Tensor):
+        if type(o) == torch.Tensor:
             yield o.storage()
 
 
@@ -252,7 +253,7 @@ Using a simple calculation of the object size won't work for `weakref.proxy`.
 >>> objsize.get_deep_size(o)
 896
 >>> o_ref = weakref.proxy(o)
->>> objsize.get_deep_size(oref)
+>>> objsize.get_deep_size(o_ref)
 72
 ```
 
@@ -277,7 +278,7 @@ def get_weakref_referents(*objs):
 Then use it as follows:
 
 ```pycon
->>> objsize.get_deep_size(oref, get_referents_func=get_weakref_referents)
+>>> objsize.get_deep_size(o_ref, get_referents_func=get_weakref_referents)
 968
 ```
 
@@ -287,7 +288,7 @@ After the referenced object will be collected, then the size of the proxy object
 >>> del o
 >>> gc.collect()
 >>> # Wait for the object to be collected 
->>> objsize.get_deep_size(oref, get_referents_func=get_weakref_referents)
+>>> objsize.get_deep_size(o_ref, get_referents_func=get_weakref_referents)
 72
 ```
 

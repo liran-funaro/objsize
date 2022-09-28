@@ -230,7 +230,7 @@ class TestDeepObjSize(unittest.TestCase):
             objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents),
         )
 
-    def test_get_exclude_test(self):
+    def test_get_exclude_set(self):
         obj1 = [1]
         exclude_set = objsize.get_exclude_set(obj1)
         previous_sz = len(exclude_set)
@@ -238,6 +238,11 @@ class TestDeepObjSize(unittest.TestCase):
         obj2 = [2]
         exclude_set = objsize.get_exclude_set(obj2, exclude_set=exclude_set)
         self.assertEqual(previous_sz + 1, len(exclude_set))
+
+    def test_bad_module(self):
+        # noinspection PyTypeChecker
+        sys.modules["fake_module"] = None
+        objsize.get_deep_size({})
 
     """
     Thanks to bosswissam for the following list of tests.

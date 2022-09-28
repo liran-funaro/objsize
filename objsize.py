@@ -94,6 +94,25 @@ def get_exclude_set(
     get_referents_func=default_get_referents,
     filter_func=default_object_filter,
 ) -> Optional[set]:
+    """
+    Traverse all the arguments' subtree without ingesting the result, just to update the `marked_set`.
+    See `traverse_bfs()` for more information.
+
+    Parameters
+    ----------
+    exclude : iterable, optional
+        One or more object(s).
+    exclude_set : set, optional
+        See `traverse_bfs()`.
+    get_referents_func : callable
+        See `traverse_bfs()`.
+    filter_func : callable
+        See `traverse_bfs()`.
+
+    Returns
+    -------
+    The updated exclude-set.
+    """
     if exclude_set is None:
         exclude_set = set()
     if exclude is None:
