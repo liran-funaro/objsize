@@ -37,7 +37,7 @@ import sys
 import types
 from typing import Any, Iterable, Optional, Set
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 # Common type: a set of objects' ID
 MarkedSet = Set[int]
