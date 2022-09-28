@@ -109,6 +109,15 @@ def get_exclude_set(
     return exclude_set
 
 
+def __iter_modules_globals():
+    modules = list(sys.modules.values())
+    for m in modules:
+        try:
+            yield vars(m)
+        except TypeError:
+            pass
+
+
 def traverse_bfs(
     *objs,
     exclude: Optional[Iterable] = None,
@@ -154,7 +163,7 @@ def traverse_bfs(
     # None shouldn't be included in size calculations because it is a singleton
     exclude_set.add(id(None))
     # Modules' "globals" should not be included as they are shared
-    exclude_set.update(id(vars(m)) for m in list(sys.modules.values()))
+    exclude_set.update(map(id, __iter_modules_globals()))
 
     exclude_set = get_exclude_set(
         exclude,
