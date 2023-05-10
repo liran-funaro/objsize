@@ -1,5 +1,5 @@
 <!---
-Copyright (c) 2006-2022, Liran Funaro.
+Copyright (c) 2006-2023, Liran Funaro.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
