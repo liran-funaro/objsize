@@ -29,6 +29,7 @@ POSSIBILITY OF SUCH DAMAGE.
 # objsize
 
 [![Coverage Status](https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master)](https://coveralls.io/github/liran-funaro/objsize?branch=master)
+[![Downloads](https://static.pepy.tech/badge/objsize)](https://pepy.tech/project/objsize)
 
 Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
 
