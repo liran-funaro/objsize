@@ -89,10 +89,10 @@ default_object_filter = shared_object_or_function_filter
 
 
 def get_exclude_set(
-        exclude: Optional[Iterable] = None,
-        exclude_set: Optional[MarkedSet] = None,
-        get_referents_func=default_get_referents,
-        filter_func=default_object_filter,
+    exclude: Optional[Iterable] = None,
+    exclude_set: Optional[MarkedSet] = None,
+    get_referents_func=default_get_referents,
+    filter_func=default_object_filter,
 ) -> Optional[set]:
     """
     Traverse all the arguments' subtree without ingesting the result, just to update the `marked_set`.
@@ -138,12 +138,12 @@ def __iter_modules_globals():
 
 
 def traverse_bfs(
-        *objs,
-        exclude: Optional[Iterable] = None,
-        marked_set: Optional[MarkedSet] = None,
-        exclude_set: Optional[MarkedSet] = None,
-        get_referents_func=default_get_referents,
-        filter_func=default_object_filter,
+    *objs,
+    exclude: Optional[Iterable] = None,
+    marked_set: Optional[MarkedSet] = None,
+    exclude_set: Optional[MarkedSet] = None,
+    get_referents_func=default_get_referents,
+    filter_func=default_object_filter,
 ) -> Iterable[Any]:
     """
     Traverse all the arguments' subtree.
@@ -199,11 +199,7 @@ def traverse_bfs(
         #  - Object that are already marked/excluded (using the marked-set/exclude-set).
         #  - Objects that are filtered by the given filter function (see above).
         #  - Repeated objects (using dict notation).
-        objs = {
-            o_id: o
-            for o_id, o in objs
-            if o_id not in marked_set and o_id not in exclude_set and filter_func(o)
-        }
+        objs = {o_id: o for o_id, o in objs if o_id not in marked_set and o_id not in exclude_set and filter_func(o)}
 
         # We stop when there are no new valid objects to traverse.
         if not objs:
@@ -220,12 +216,12 @@ def traverse_bfs(
 
 
 def traverse_exclusive_bfs(
-        *objs,
-        exclude: Optional[Iterable] = None,
-        marked_set: Optional[MarkedSet] = None,
-        exclude_set: Optional[MarkedSet] = None,
-        get_referents_func=default_get_referents,
-        filter_func=default_object_filter,
+    *objs,
+    exclude: Optional[Iterable] = None,
+    marked_set: Optional[MarkedSet] = None,
+    exclude_set: Optional[MarkedSet] = None,
+    get_referents_func=default_get_referents,
+    filter_func=default_object_filter,
 ) -> Iterable[Any]:
     """
     Traverse all the arguments' subtree, excluding non-exclusive objects.
@@ -293,13 +289,13 @@ def traverse_exclusive_bfs(
 
 
 def get_deep_size(
-        *objs,
-        exclude: Optional[Iterable] = None,
-        marked_set: Optional[MarkedSet] = None,
-        exclude_set: Optional[MarkedSet] = None,
-        get_size_func=default_get_size,
-        get_referents_func=default_get_referents,
-        filter_func=default_object_filter,
+    *objs,
+    exclude: Optional[Iterable] = None,
+    marked_set: Optional[MarkedSet] = None,
+    exclude_set: Optional[MarkedSet] = None,
+    get_size_func=default_get_size,
+    get_referents_func=default_get_referents,
+    filter_func=default_object_filter,
 ) -> int:
     """
     Calculates the deep size of all the arguments.
@@ -343,13 +339,13 @@ def get_deep_size(
 
 
 def get_exclusive_deep_size(
-        *objs,
-        exclude: Optional[Iterable] = None,
-        marked_set: Optional[MarkedSet] = None,
-        exclude_set: Optional[MarkedSet] = None,
-        get_size_func=default_get_size,
-        get_referents_func=default_get_referents,
-        filter_func=default_object_filter,
+    *objs,
+    exclude: Optional[Iterable] = None,
+    marked_set: Optional[MarkedSet] = None,
+    exclude_set: Optional[MarkedSet] = None,
+    get_size_func=default_get_size,
+    get_referents_func=default_get_referents,
+    filter_func=default_object_filter,
 ) -> int:
     """
     Calculates the deep size of all the arguments, excluding non-exclusive objects.

@@ -116,9 +116,7 @@ class TestDeepObjSize(unittest.TestCase):
         expected_sz -= sys.getsizeof(exclude[0])
 
         gc.collect()
-        self.assertEqual(
-            expected_sz, objsize.get_exclusive_deep_size(obj, exclude=exclude)
-        )
+        self.assertEqual(expected_sz, objsize.get_exclusive_deep_size(obj, exclude=exclude))
 
     def test_size_func(self):
         obj = get_unique_strings(5)
@@ -131,9 +129,7 @@ class TestDeepObjSize(unittest.TestCase):
             else:
                 return sys.getsizeof(o)
 
-        self.assertEqual(
-            expected_sz, objsize.get_deep_size(obj, get_size_func=size_func)
-        )
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, get_size_func=size_func))
 
     def test_referents_func(self):
         obj = get_unique_strings(5)
@@ -149,9 +145,7 @@ class TestDeepObjSize(unittest.TestCase):
                 if o == with_additional_str:
                     yield additional_obj
 
-        self.assertEqual(
-            expected_sz, objsize.get_deep_size(obj, get_referents_func=referents_func)
-        )
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, get_referents_func=referents_func))
 
     def test_filter_func(self):
         obj = get_unique_strings(5)
@@ -164,9 +158,7 @@ class TestDeepObjSize(unittest.TestCase):
         def filter_func(o):
             return objsize.default_object_filter(o) and o != subtree
 
-        self.assertEqual(
-            expected_sz, objsize.get_deep_size(obj, filter_func=filter_func)
-        )
+        self.assertEqual(expected_sz, objsize.get_deep_size(obj, filter_func=filter_func))
 
     def test_class_with_None(self):
         # None doesn't occupy extra space because it is a singleton
@@ -179,18 +171,12 @@ class TestDeepObjSize(unittest.TestCase):
 
         # A string occupies space
         obj = FakeClass(string)
-        self.assertEqual(
-            FakeClass.sizeof(obj) + sys.getsizeof(string), objsize.get_deep_size(obj)
-        )
+        self.assertEqual(FakeClass.sizeof(obj) + sys.getsizeof(string), objsize.get_deep_size(obj))
 
     def test_with_function(self):
         obj = {"func": lambda x: x}
-        without_functions = objsize.get_deep_size(
-            obj, filter_func=objsize.shared_object_or_function_filter
-        )
-        with_functions = objsize.get_deep_size(
-            obj, filter_func=objsize.shared_object_filter
-        )
+        without_functions = objsize.get_deep_size(obj, filter_func=objsize.shared_object_or_function_filter)
+        with_functions = objsize.get_deep_size(obj, filter_func=objsize.shared_object_filter)
         self.assertGreater(with_functions, without_functions)
 
     def test_size_of_weak_ref(self):
@@ -282,12 +268,7 @@ class TestDeepObjSize(unittest.TestCase):
         empty_list_size = sys.getsizeof([])
         empty_tuple_size = sys.getsizeof(())
         empty_dict_size = sys.getsizeof({})
-        expected_size = (
-            sys.getsizeof(collection_list)
-            + empty_list_size
-            + empty_tuple_size
-            + empty_dict_size
-        )
+        expected_size = sys.getsizeof(collection_list) + empty_list_size + empty_tuple_size + empty_dict_size
 
         self.assertEqual(expected_size, objsize.get_deep_size(collection_list))
 
@@ -295,9 +276,7 @@ class TestDeepObjSize(unittest.TestCase):
         rep = ["test1"]
         obj = [rep, rep]
         obj2 = [rep]
-        expected_sz = (
-            objsize.get_deep_size(obj2) - sys.getsizeof(obj2) + sys.getsizeof(obj)
-        )
+        expected_sz = objsize.get_deep_size(obj2) - sys.getsizeof(obj2) + sys.getsizeof(obj)
         self.assertEqual(expected_sz, objsize.get_deep_size(obj))
 
     def test_gracefully_handles_self_referential_objects(self):
@@ -381,9 +360,7 @@ class TestDeepObjSize(unittest.TestCase):
 
         s1_sz = sys.getsizeof(s1) + sys.getsizeof(7)
         s2_sz = sys.getsizeof(s2) + sys.getsizeof(3) + sys.getsizeof(4)
-        s3_sz = (
-            sys.getsizeof(s3) + sys.getsizeof(4) + sys.getsizeof(5) + sys.getsizeof(6)
-        )
+        s3_sz = sys.getsizeof(s3) + sys.getsizeof(4) + sys.getsizeof(5) + sys.getsizeof(6)
 
         self.assertEqual(s1_sz, objsize.get_deep_size(s1))
         self.assertEqual(s2_sz, objsize.get_deep_size(s2))
