@@ -30,121 +30,37 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
-import collections
-import gc
-import inspect
-import sys
-import types
-from typing import Any, Iterable, Optional, Set
+import warnings
+from typing import Any, Iterable, Iterator, Optional
+
+from objsize.size import ObjSizeSettings, SizeFunc, default_get_size
+from objsize.traverse import (
+    FilterFunc,
+    GetReferentsFunc,
+    MarkedSet,
+    SharedObjectOrFunctionType,
+    SharedObjectType,
+    TraversalContext,
+    TraversalSettings,
+    default_get_referents,
+    default_object_filter,
+    safe_is_instance,
+    shared_object_filter,
+    shared_object_or_function_filter,
+)
 
 __version__ = "0.6.1"
-
-# Common type: a set of objects' ID
-MarkedSet = Set[int]
-
-SharedObjectType = (
-    type,
-    types.ModuleType,
-    types.FrameType,
-    types.BuiltinFunctionType,
-)
-
-SharedObjectOrFunctionType = (
-    *SharedObjectType,
-    types.FunctionType,
-    types.LambdaType,
-)
-
-
-def safe_is_instance(obj: Any, type_tuple) -> bool:
-    """
-    Return whether an object is an instance of a class or of a subclass thereof.
-    See `isinstance()` for more information.
-
-    Catches `ReferenceError` because applying `isinstance()` on `weakref.proxy`
-    objects attempts to dereference the proxy objects, which may yield an exception.
-    """
-    try:
-        return isinstance(obj, type_tuple)
-    except ReferenceError:
-        return False
-
-
-def shared_object_or_function_filter(obj: Any) -> bool:
-    """Filters objects that are likely to be shared among many objects."""
-    return not safe_is_instance(obj, SharedObjectOrFunctionType)
-
-
-def shared_object_filter(obj: Any) -> bool:
-    """Filters objects that are likely to be shared among many objects, but includes functions and lambdas."""
-    return not safe_is_instance(obj, SharedObjectType)
-
-
-# See https://docs.python.org/3/library/gc.html#gc.get_referents
-default_get_referents = gc.get_referents
-# See https://docs.python.org/3/library/sys.html#sys.getsizeof
-default_get_size = sys.getsizeof
-# By default, we filter shared objects, i.e., types, modules, functions, and lambdas
-default_object_filter = shared_object_or_function_filter
-
-
-def get_exclude_set(
-    exclude: Optional[Iterable] = None,
-    exclude_set: Optional[MarkedSet] = None,
-    get_referents_func=default_get_referents,
-    filter_func=default_object_filter,
-) -> Optional[set]:
-    """
-    Traverse all the arguments' subtree without ingesting the result, just to update the `marked_set`.
-    See `traverse_bfs()` for more information.
-
-    Parameters
-    ----------
-    exclude : iterable, optional
-        One or more object(s).
-    exclude_set : set, optional
-        See `traverse_bfs()`.
-    get_referents_func : callable
-        See `traverse_bfs()`.
-    filter_func : callable
-        See `traverse_bfs()`.
-
-    Returns
-    -------
-    The updated exclude-set.
-    """
-    if exclude_set is None:
-        exclude_set = set()
-    if exclude is None:
-        return exclude_set
-    obj_it = traverse_bfs(
-        *exclude,
-        marked_set=exclude_set,
-        exclude_set=exclude_set,
-        get_referents_func=get_referents_func,
-        filter_func=filter_func,
-    )
-    collections.deque(obj_it, maxlen=0)
-    return exclude_set
-
-
-def __iter_modules_globals():
-    modules = list(sys.modules.values())
-    for mod in modules:
-        try:
-            yield vars(mod)
-        except TypeError:
-            pass
 
 
 def traverse_bfs(
     *objs,
-    exclude: Optional[Iterable] = None,
+    exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
     exclude_set: Optional[MarkedSet] = None,
-    get_referents_func=default_get_referents,
-    filter_func=default_object_filter,
-) -> Iterable[Any]:
+    get_referents_func: GetReferentsFunc = default_get_referents,
+    filter_func: FilterFunc = default_object_filter,
+    exclude_modules_globals: bool = True,
+) -> Iterator[Any]:
     """
     Traverse all the arguments' subtree.
     By default, this excludes shared objects, i.e., types, modules, functions, and lambdas.
@@ -154,75 +70,36 @@ def traverse_bfs(
     objs : object(s)
         One or more object(s).
     exclude : iterable, optional
-        Objects that will be excluded from this calculation, as well as their subtrees.
+        See `TraversalSettings`.
     marked_set : set, optional
-        An existing set of marked objects' ID, i.e., `id(obj)`.
-        Objects that their ID is in this set will not be traversed.
-        If a set is given, it will be updated with all the traversed objects' ID.
+        See `TraversalContext`.
     exclude_set : set, optional
-        Similar to the marked set, but contains excluded objects' ID.
+        See `TraversalContext`.
     get_referents_func : callable
-        Receives any number of objects and returns iterable over the objects that are referred by these objects.
-        Default: `gc.get_referents()`.
-        See: https://docs.python.org/3/library/gc.html#gc.get_referents
+        See `TraversalSettings`.
     filter_func : callable
-        Receives an objects and return `True` if the object---and its subtree---should be traversed.
-        Default: `objsize.shared_object_filter`.
+        See `TraversalSettings`.
+    exclude_modules_globals : bool
+        See `TraversalSettings`.
 
     Yields
     ------
     object
         The traversed objects, one by one.
     """
-    if marked_set is None:
-        marked_set = set()
-    if exclude_set is None:
-        exclude_set = set()
-
-    # None shouldn't be included in size calculations because it is a singleton
-    exclude_set.add(id(None))
-    # Modules' "globals" should not be included as they are shared
-    exclude_set.update(map(id, __iter_modules_globals()))
-
-    exclude_set = get_exclude_set(
-        exclude,
-        exclude_set=exclude_set,
-        get_referents_func=get_referents_func,
-        filter_func=filter_func,
-    )
-
-    while objs:
-        # Get the object's ids
-        objs = ((id(o), o) for o in objs)
-
-        # Filter:
-        #  - Object that are already marked/excluded (using the marked-set/exclude-set).
-        #  - Objects that are filtered by the given filter function (see above).
-        #  - Repeated objects (using dict notation).
-        objs = {o_id: o for o_id, o in objs if o_id not in marked_set and o_id not in exclude_set and filter_func(o)}
-
-        # We stop when there are no new valid objects to traverse.
-        if not objs:
-            break
-
-        # Update the marked set with the ids, so we will not traverse them again.
-        marked_set.update(objs.keys())
-
-        # Yield traversed objects
-        yield from objs.values()
-
-        # Lookup all the object referred to by the object from the current round.
-        objs = get_referents_func(*objs.values())
+    settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
+    yield from settings.traverse_bfs(objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def traverse_exclusive_bfs(
     *objs,
-    exclude: Optional[Iterable] = None,
+    exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
     exclude_set: Optional[MarkedSet] = None,
-    get_referents_func=default_get_referents,
-    filter_func=default_object_filter,
-) -> Iterable[Any]:
+    get_referents_func: GetReferentsFunc = default_get_referents,
+    filter_func: FilterFunc = default_object_filter,
+    exclude_modules_globals: bool = True,
+) -> Iterator[Any]:
     """
     Traverse all the arguments' subtree, excluding non-exclusive objects.
     That is, objects that are referenced by objects that are not in this subtree.
@@ -232,15 +109,17 @@ def traverse_exclusive_bfs(
     objs : object(s)
         One or more object(s).
     exclude : iterable, optional
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
     marked_set : set, optional
-        See `traverse_bfs()`.
+        See `TraversalContext`.
     exclude_set : set, optional
-        See `traverse_bfs()`.
+        See `TraversalContext`.
     get_referents_func : callable
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
     filter_func : callable
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
+    exclude_modules_globals : bool
+        See `TraversalSettings`.
 
     Yields
     ------
@@ -251,41 +130,8 @@ def traverse_exclusive_bfs(
     --------
     traverse_bfs : to understand which objects are traversed.
     """
-    if marked_set is None:
-        marked_set = set()
-    if exclude_set is None:
-        exclude_set = set()
-
-    # The arguments are considered the root objects, which we include
-    # regardless of their exclusiveness.
-    root_obj_ids = set(map(id, objs))
-
-    # We have to complete the entire traverse, so we will have
-    # a complete marked set.
-    subtree = tuple(
-        traverse_bfs(
-            *objs,
-            exclude=exclude,
-            marked_set=marked_set,
-            exclude_set=exclude_set,
-            get_referents_func=get_referents_func,
-            filter_func=filter_func,
-        )
-    )
-
-    # We keep the current frame and `subtree` objects in addition to the marked-set because they refer to objects
-    # in our subtree which may cause them to appear non-exclusive.
-    # `objs` should not be added as it only refers to the root objects.
-    frame_set = marked_set | {id(inspect.currentframe()), id(subtree)}
-
-    # We first make sure that any "old" objects that may refer to our subtree were collected.
-    gc.collect()
-
-    # Test for each object that all the object that refer to it is in the marked-set, frame-set, or is a root
-    # See: https://docs.python.org/3.7/library/gc.html#gc.get_referrers
-    for obj in subtree:
-        if id(obj) in root_obj_ids or frame_set.issuperset(map(id, gc.get_referrers(obj))):
-            yield obj
+    settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
+    yield from settings.traverse_exclusive_bfs(objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_deep_size(
@@ -296,6 +142,7 @@ def get_deep_size(
     get_size_func=default_get_size,
     get_referents_func=default_get_referents,
     filter_func=default_object_filter,
+    exclude_modules_globals: bool = True,
 ) -> int:
     """
     Calculates the deep size of all the arguments.
@@ -305,18 +152,19 @@ def get_deep_size(
     objs : object(s)
         One or more object(s).
     exclude : iterable, optional
-        Objects that will be excluded from this calculation, as well as their subtrees.
+        See `TraversalSettings`.
     marked_set : set, optional
-        See `traverse_bfs()`.
+        See `TraversalContext`.
     exclude_set : set, optional
-        See `traverse_bfs()`.
+        See `TraversalContext`.
     get_size_func : function, optional
-        A function that determines the object size.
-        Default: `sys.getsizeof()`
+        See `ObjSizeSettings`.
     get_referents_func : callable
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
     filter_func : callable
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
+    exclude_modules_globals : bool
+        See `TraversalSettings`.
 
     Returns
     -------
@@ -327,15 +175,8 @@ def get_deep_size(
     --------
     traverse_bfs : to understand which objects are traversed.
     """
-    obj_it = traverse_bfs(
-        *objs,
-        exclude=exclude,
-        marked_set=marked_set,
-        exclude_set=exclude_set,
-        get_referents_func=get_referents_func,
-        filter_func=filter_func,
-    )
-    return sum(map(get_size_func, obj_it))
+    settings = ObjSizeSettings(get_referents_func, filter_func, exclude, exclude_modules_globals, get_size_func)
+    return settings.get_deep_size(objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_exclusive_deep_size(
@@ -346,6 +187,7 @@ def get_exclusive_deep_size(
     get_size_func=default_get_size,
     get_referents_func=default_get_referents,
     filter_func=default_object_filter,
+    exclude_modules_globals: bool = True,
 ) -> int:
     """
     Calculates the deep size of all the arguments, excluding non-exclusive objects.
@@ -355,17 +197,19 @@ def get_exclusive_deep_size(
     objs : object(s)
         One or more object(s).
     exclude : iterable, optional
-        See `get_deep_size()`.
+        See `TraversalSettings`.
     marked_set : set, optional
-        See `traverse_bfs()`.
+        See `TraversalContext`.
     exclude_set : set, optional
-        See `traverse_bfs()`.
+        See `TraversalContext`.
     get_size_func : function, optional
-        See `get_deep_size()`.
+        See `ObjSizeSettings`.
     get_referents_func : callable
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
     filter_func : callable
-        See `traverse_bfs()`.
+        See `TraversalSettings`.
+    exclude_modules_globals : bool
+        See `TraversalSettings`.
 
     Returns
     -------
@@ -376,12 +220,40 @@ def get_exclusive_deep_size(
     --------
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
-    obj_it = traverse_exclusive_bfs(
-        *objs,
-        exclude=exclude,
-        marked_set=marked_set,
-        exclude_set=exclude_set,
-        get_referents_func=get_referents_func,
-        filter_func=filter_func,
-    )
-    return sum(map(get_size_func, obj_it))
+    settings = ObjSizeSettings(get_referents_func, filter_func, exclude, exclude_modules_globals, get_size_func)
+    return settings.get_exclusive_deep_size(objs, marked_set=marked_set, exclude_set=exclude_set)
+
+
+def get_exclude_set(
+    exclude: Optional[Iterable[Any]] = None,
+    exclude_set: Optional[MarkedSet] = None,
+    get_referents_func: GetReferentsFunc = default_get_referents,
+    filter_func: FilterFunc = default_object_filter,
+    exclude_modules_globals: bool = False,
+) -> Optional[set]:
+    """
+    objsize.get_exclude_set() is deprecated. It will be removed on version 1.0.0.
+
+    Traverse all the arguments' subtree without ingesting the result, just to update the `exclude_set`.
+    See `traverse_bfs()` for more information.
+
+    Parameters
+    ----------
+    exclude : iterable, optional
+        One or more object(s).
+    exclude_set : set, optional
+        See `ObjectFilter`.
+    get_referents_func : callable
+        See `ObjectIterSettings`.
+    filter_func : callable
+        See `ObjectIterSettings`.
+    exclude_modules_globals : bool
+        See `ObjectIterSettings`.
+
+    Returns
+    -------
+    The updated exclude-set.
+    """
+    warnings.warn("objsize.get_exclude_set() is deprecated. It will be removed on version 1.0.0.", DeprecationWarning)
+    settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
+    return settings.new_context(exclude_set=exclude_set).exclude_set
