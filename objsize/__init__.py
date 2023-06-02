@@ -56,7 +56,7 @@ SharedObjectOrFunctionType = (
 )
 
 
-def safe_is_instance(o: Any, type_tuple) -> bool:
+def safe_is_instance(obj: Any, type_tuple) -> bool:
     """
     Return whether an object is an instance of a class or of a subclass thereof.
     See `isinstance()` for more information.
@@ -65,19 +65,19 @@ def safe_is_instance(o: Any, type_tuple) -> bool:
     objects attempts to dereference the proxy objects, which may yield an exception.
     """
     try:
-        return isinstance(o, type_tuple)
+        return isinstance(obj, type_tuple)
     except ReferenceError:
         return False
 
 
-def shared_object_or_function_filter(o: Any) -> bool:
+def shared_object_or_function_filter(obj: Any) -> bool:
     """Filters objects that are likely to be shared among many objects."""
-    return not safe_is_instance(o, SharedObjectOrFunctionType)
+    return not safe_is_instance(obj, SharedObjectOrFunctionType)
 
 
-def shared_object_filter(o: Any) -> bool:
+def shared_object_filter(obj: Any) -> bool:
     """Filters objects that are likely to be shared among many objects, but includes functions and lambdas."""
-    return not safe_is_instance(o, SharedObjectType)
+    return not safe_is_instance(obj, SharedObjectType)
 
 
 # See https://docs.python.org/3/library/gc.html#gc.get_referents
@@ -117,22 +117,22 @@ def get_exclude_set(
         exclude_set = set()
     if exclude is None:
         return exclude_set
-    it = traverse_bfs(
+    obj_it = traverse_bfs(
         *exclude,
         marked_set=exclude_set,
         exclude_set=exclude_set,
         get_referents_func=get_referents_func,
         filter_func=filter_func,
     )
-    collections.deque(it, maxlen=0)
+    collections.deque(obj_it, maxlen=0)
     return exclude_set
 
 
 def __iter_modules_globals():
     modules = list(sys.modules.values())
-    for m in modules:
+    for mod in modules:
         try:
-            yield vars(m)
+            yield vars(mod)
         except TypeError:
             pass
 
@@ -283,9 +283,9 @@ def traverse_exclusive_bfs(
 
     # Test for each object that all the object that refer to it is in the marked-set, frame-set, or is a root
     # See: https://docs.python.org/3.7/library/gc.html#gc.get_referrers
-    for o in subtree:
-        if id(o) in root_obj_ids or frame_set.issuperset(map(id, gc.get_referrers(o))):
-            yield o
+    for obj in subtree:
+        if id(obj) in root_obj_ids or frame_set.issuperset(map(id, gc.get_referrers(obj))):
+            yield obj
 
 
 def get_deep_size(
@@ -327,7 +327,7 @@ def get_deep_size(
     --------
     traverse_bfs : to understand which objects are traversed.
     """
-    it = traverse_bfs(
+    obj_it = traverse_bfs(
         *objs,
         exclude=exclude,
         marked_set=marked_set,
@@ -335,7 +335,7 @@ def get_deep_size(
         get_referents_func=get_referents_func,
         filter_func=filter_func,
     )
-    return sum(map(get_size_func, it))
+    return sum(map(get_size_func, obj_it))
 
 
 def get_exclusive_deep_size(
@@ -376,7 +376,7 @@ def get_exclusive_deep_size(
     --------
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
-    it = traverse_exclusive_bfs(
+    obj_it = traverse_exclusive_bfs(
         *objs,
         exclude=exclude,
         marked_set=marked_set,
@@ -384,4 +384,4 @@ def get_exclusive_deep_size(
         get_referents_func=get_referents_func,
         filter_func=filter_func,
     )
-    return sum(map(get_size_func, it))
+    return sum(map(get_size_func, obj_it))
