@@ -32,6 +32,7 @@ import gc
 import inspect
 import sys
 import types
+import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
 
@@ -158,6 +159,12 @@ class TraversalContext:
         marked_set: Optional[MarkedSet] = None,
         exclude_set: Optional[MarkedSet] = None,
     ):
+        if marked_set is not None or exclude_set is not None:
+            warnings.warn(
+                "marked_set and exclude_set parameters are deprecated. They will be removed on version 1.0.0. "
+                "Please use objsize.traverse.TraversalContext(settings) instead.",
+                DeprecationWarning,
+            )
         self.settings = settings if settings is not None else TraversalSettings()
         self.marked_set = marked_set if marked_set is not None else set()
         self.exclude_set = exclude_set if exclude_set is not None else set()

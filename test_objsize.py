@@ -38,6 +38,8 @@ import weakref
 from collections import namedtuple
 from typing import Any, List
 
+import pytest
+
 import objsize
 import objsize.traverse
 
@@ -235,19 +237,24 @@ def test_size_of_weak_ref():
 
 # noinspection PyDeprecation
 def test_get_exclude_set():
-    init_set = objsize.get_exclude_set(exclude_modules_globals=False)
+    with pytest.deprecated_call():
+        init_set = objsize.get_exclude_set(exclude_modules_globals=False)
     assert len(init_set) > 0
 
-    first_set = objsize.get_exclude_set(exclude_modules_globals=False)
-    second_set = objsize.get_exclude_set(exclude_modules_globals=False)
+    with pytest.deprecated_call():
+        first_set = objsize.get_exclude_set(exclude_modules_globals=False)
+    with pytest.deprecated_call():
+        second_set = objsize.get_exclude_set(exclude_modules_globals=False)
     assert len(second_set) == len(first_set)
 
     obj1 = [1]
-    second_set = objsize.get_exclude_set(obj1, exclude_set=set(first_set), exclude_modules_globals=False)
+    with pytest.deprecated_call():
+        second_set = objsize.get_exclude_set(obj1, exclude_set=set(first_set), exclude_modules_globals=False)
     assert len(second_set) == len(first_set) + 1
 
     obj2 = [2]
-    third_set = objsize.get_exclude_set(obj2, exclude_set=set(second_set), exclude_modules_globals=False)
+    with pytest.deprecated_call():
+        third_set = objsize.get_exclude_set(obj2, exclude_set=set(second_set), exclude_modules_globals=False)
     assert len(third_set) == len(second_set) + 1
 
 
