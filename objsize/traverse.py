@@ -125,16 +125,16 @@ class TraversalSettings:
         return TraversalContext(self, marked_set, exclude_set)
 
     def traverse_bfs(
-        self, objs: Iterable[Any], *, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
+        self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
     ) -> Iterator[Any]:
         """See `TraversalContext.traverse_bfs()`"""
-        yield from self.new_context(marked_set=marked_set, exclude_set=exclude_set).traverse_bfs(objs)
+        yield from self.new_context(marked_set=marked_set, exclude_set=exclude_set).traverse_bfs(*objs)
 
     def traverse_exclusive_bfs(
-        self, objs: Iterable[Any], *, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
+        self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
     ) -> Iterator[Any]:
         """See `TraversalContext.traverse_exclusive_bfs()`"""
-        yield from self.new_context(marked_set=marked_set, exclude_set=exclude_set).traverse_exclusive_bfs(objs)
+        yield from self.new_context(marked_set=marked_set, exclude_set=exclude_set).traverse_exclusive_bfs(*objs)
 
 
 class TraversalContext:
@@ -183,7 +183,7 @@ class TraversalContext:
             self.exclude_set.update(map(id, _iter_modules_globals()))
 
         if self.settings.exclude is not None:
-            collections.deque(self.traverse_bfs(self.settings.exclude, exclude=True), maxlen=0)
+            collections.deque(self.traverse_bfs(*self.settings.exclude, exclude=True), maxlen=0)
 
     def obj_filter_iterator(self, obj_it: Iterable[Any]) -> Iterator[Tuple[int, Any]]:
         """
@@ -208,7 +208,7 @@ class TraversalContext:
         """Apply filter, and screen repeated objects (using dict notation)."""
         return dict(self.obj_filter_iterator(obj_it))
 
-    def traverse_bfs(self, objs: Iterable[Any], exclude=False) -> Iterator[Any]:
+    def traverse_bfs(self, *objs: Any, exclude=False) -> Iterator[Any]:
         """
         Traverse all the arguments' subtree.
 
@@ -229,9 +229,11 @@ class TraversalContext:
         else:
             marked_set = self.exclude_set
 
-        while objs:
+        obj_it: Iterable[Any] = iter(objs)
+
+        while obj_it:
             # Apply filter, and screen repeated objects.
-            objs_map = self.filter(objs)
+            objs_map = self.filter(obj_it)
 
             # We stop when there are no new valid objects to traverse.
             if not objs_map:
@@ -244,9 +246,9 @@ class TraversalContext:
             yield from objs_map.values()
 
             # Lookup all the object referred to by the object from the current round.
-            objs = self.settings.get_referents_func(*objs_map.values())
+            obj_it = self.settings.get_referents_func(*objs_map.values())
 
-    def traverse_exclusive_bfs(self, objs: Iterable[Any]) -> Iterator[Any]:
+    def traverse_exclusive_bfs(self, *objs: Any) -> Iterator[Any]:
         """
         Traverse all the arguments' subtree, excluding non-exclusive objects.
         That is, objects that are referenced by objects that are not in this subtree.
@@ -269,7 +271,7 @@ class TraversalContext:
         root_obj_ids = set(map(id, objs))
 
         # We have to complete the entire traverse, so we will have a complete marked set.
-        subtree = tuple(self.traverse_bfs(objs))
+        subtree = tuple(self.traverse_bfs(*objs))
 
         # We keep the current frame and `subtree` objects in addition to the marked-set because they refer to objects
         # in our subtree which may cause them to appear non-exclusive.

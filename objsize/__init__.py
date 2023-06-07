@@ -88,7 +88,7 @@ def traverse_bfs(
         The traversed objects, one by one.
     """
     settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
-    yield from settings.traverse_bfs(objs, marked_set=marked_set, exclude_set=exclude_set)
+    yield from settings.traverse_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def traverse_exclusive_bfs(
@@ -131,7 +131,7 @@ def traverse_exclusive_bfs(
     traverse_bfs : to understand which objects are traversed.
     """
     settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
-    yield from settings.traverse_exclusive_bfs(objs, marked_set=marked_set, exclude_set=exclude_set)
+    yield from settings.traverse_exclusive_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_deep_size(
@@ -176,7 +176,7 @@ def get_deep_size(
     traverse_bfs : to understand which objects are traversed.
     """
     settings = ObjSizeSettings(get_referents_func, filter_func, exclude, exclude_modules_globals, get_size_func)
-    return settings.get_deep_size(objs, marked_set=marked_set, exclude_set=exclude_set)
+    return settings.get_deep_size(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_exclusive_deep_size(
@@ -221,7 +221,7 @@ def get_exclusive_deep_size(
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
     settings = ObjSizeSettings(get_referents_func, filter_func, exclude, exclude_modules_globals, get_size_func)
-    return settings.get_exclusive_deep_size(objs, marked_set=marked_set, exclude_set=exclude_set)
+    return settings.get_exclusive_deep_size(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_exclude_set(

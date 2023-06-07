@@ -29,7 +29,7 @@ POSSIBILITY OF SUCH DAMAGE.
 """
 import sys
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Optional
 
 from objsize.traverse import MarkedSet, TraversalSettings
 
@@ -59,7 +59,7 @@ class ObjSizeSettings(TraversalSettings):
     get_size_func: SizeFunc = default_get_size
 
     def get_deep_size(
-        self, objs: Iterable[Any], *, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
+        self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
     ):
         """
         Calculates the deep size of all the arguments.
@@ -82,10 +82,10 @@ class ObjSizeSettings(TraversalSettings):
         --------
         traverse_bfs : to understand which objects are traversed.
         """
-        return sum(map(self.get_size_func, self.traverse_bfs(objs, marked_set=marked_set, exclude_set=exclude_set)))
+        return sum(map(self.get_size_func, self.traverse_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set)))
 
     def get_exclusive_deep_size(
-        self, objs: Iterable[Any], *, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
+        self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
     ):
         """
         Calculates the deep size of all the arguments, excluding non-exclusive objects.
@@ -109,5 +109,5 @@ class ObjSizeSettings(TraversalSettings):
         traverse_exclusive_bfs : to understand which objects are traversed.
         """
         return sum(
-            map(self.get_size_func, self.traverse_exclusive_bfs(objs, marked_set=marked_set, exclude_set=exclude_set))
+            map(self.get_size_func, self.traverse_exclusive_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set))
         )

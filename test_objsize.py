@@ -75,16 +75,18 @@ class FakeClass:
 
 
 def test_traverse():
-    tested_obj = {"a": "b", "c": {"a", "b", "c"}}
+    keys = get_unique_strings(3)
+    tested_obj = {keys[0]: keys[1], keys[2]: set(keys)}
     objs = set(map(id, objsize.traverse_bfs(tested_obj)))
-    expected_ids = set(map(id, ["a", "b", "c", tested_obj, tested_obj["c"]]))
+    expected_ids = set(map(id, [*keys, tested_obj, tested_obj[keys[2]]]))
     assert objs == expected_ids
 
 
 def test_traverse_exclusive():
-    tested_obj = {"a": "b", "c": {"a", "b", "c"}}
+    keys = get_unique_strings(3)
+    tested_obj = {keys[0]: keys[1], keys[2]: set(keys)}
     objs = set(map(id, objsize.traverse_exclusive_bfs(tested_obj)))
-    expected_ids = set(map(id, [tested_obj, tested_obj["c"]]))
+    expected_ids = set(map(id, [tested_obj, tested_obj[keys[2]]]))
     assert objs == expected_ids
 
 

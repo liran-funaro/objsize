@@ -183,7 +183,7 @@ import torch
 def get_size_of_torch(o):
     # `objsize.safe_is_instance` catches `ReferenceError` caused by `weakref` objects
     if objsize.safe_is_instance(o, torch.Tensor):
-        return sys.getsizeof(o.storage())
+        return sys.getsizeof(o) + sys.getsizeof(o.untyped_storage())
     else:
         return sys.getsizeof(o)
 ```
@@ -196,10 +196,10 @@ Then use it as follows:
 ...   torch.rand(200),
 ...   get_size_func=get_size_of_torch
 ... )
-848
+976
 ```
 
-However, this neglects the object's internal structure.
+The above approach may neglect the object's internal structure.
 The user can help `objsize` to find the object's hidden storage by supplying it with its own referent and filter
 functions:
 
@@ -212,20 +212,16 @@ import torch
 def get_referents_torch(*objs):
     # Yield all native referents
     yield from gc.get_referents(*objs)
-
     for o in objs:
         # If the object is a torch tensor, then also yield its storage
         if type(o) == torch.Tensor:
-            yield o.storage()
+            yield o.untyped_storage()
 
 
 def filter_func(o):
-    # Torch storage points to another meta storage that is
-    # already included in the outer storage calculation, 
-    # so we need to filter it.
-    # Also, `torch.dtype` is a common object like Python's types.
+    # `torch.dtype` is a common object like Python's types.
     return not objsize.safe_is_instance(o, (
-        *objsize.SharedObjectOrFunctionType, torch.storage._UntypedStorage, torch.dtype
+        *objsize.SharedObjectOrFunctionType, torch.dtype
     ))
 ```
 
@@ -238,7 +234,7 @@ Then use these as follows:
 ...   get_referents_func=get_referents_torch, 
 ...   filter_func=filter_func
 ... )
-1024
+976
 ```
 
 ## Case 2: `weakref`
@@ -292,6 +288,32 @@ After the referenced object will be collected, then the size of the proxy object
 >>> objsize.get_deep_size(o_ref, get_referents_func=get_weakref_referents)
 72
 ```
+
+# Object Size Settings
+To avoid repeating the input settings when handling the special cases above, you can use the
+`objsize.ObjSizeSettings()` class.
+
+```pycon
+>>> torch_objsize = objsize.ObjSizeSettings(get_size_func=get_size_of_torch)
+>>> torch_objsize.get_deep_size(torch.rand(200))
+976
+>>> torch_objsize.get_deep_size(torch.rand(300))
+1376
+```
+
+### ObjSizeSettings Parameters:
+* `filter_func`:
+        Receives an objects and return `True` if the object---and its subtree---should be traversed.
+        Default: `objsize.shared_object_filter`.
+        By default, this excludes shared objects, i.e., types, modules, functions, and lambdas.
+* `get_referents_func`:
+        Receives any number of objects and returns iterable over the objects that are referred by these objects.
+        Default: `gc.get_referents()`.
+        See: https://docs.python.org/3/library/gc.html#gc.get_referents
+* `exclude`:
+        Objects that will be excluded from this calculation, as well as their subtrees.
+* `exclude_modules_globals`:
+        If True (default), loaded modules globals will be added to the `exclude_set`.
 
 # Traversal
 
