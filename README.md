@@ -96,7 +96,6 @@ Here is a complex data structure, for example, that include a self reference:
 ```python
 my_data = (list(range(3)), list(range(3, 6)))
 
-
 class MyClass:
     def __init__(self, x, y):
         self.x = x
@@ -106,7 +105,6 @@ class MyClass:
     def __repr__(self):
         return "MyClass"
 
-
 my_obj = MyClass(*my_data)
 ```
 
@@ -114,7 +112,7 @@ We can calculate `my_obj` deep size, including its stored data.
 
 ```pycon
 >>> objsize.get_deep_size(my_obj)
-708
+724
 ```
 
 We might want to ignore non-exclusive objects such as the ones stored in `my_data`.
@@ -179,11 +177,10 @@ import objsize
 import sys
 import torch
 
-
 def get_size_of_torch(o):
     # `objsize.safe_is_instance` catches `ReferenceError` caused by `weakref` objects
     if objsize.safe_is_instance(o, torch.Tensor):
-        return sys.getsizeof(o) + sys.getsizeof(o.untyped_storage())
+        return sys.getsizeof(o) + (o.element_size() * o.nelement())
     else:
         return sys.getsizeof(o)
 ```
@@ -191,12 +188,11 @@ def get_size_of_torch(o):
 Then use it as follows:
 
 ```pycon
->>> import torch
 >>> objsize.get_deep_size(
 ...   torch.rand(200),
 ...   get_size_func=get_size_of_torch
 ... )
-976
+872
 ```
 
 The above approach may neglect the object's internal structure.
@@ -208,7 +204,6 @@ import objsize
 import gc
 import torch
 
-
 def get_referents_torch(*objs):
     # Yield all native referents
     yield from gc.get_referents(*objs)
@@ -217,24 +212,22 @@ def get_referents_torch(*objs):
         if type(o) == torch.Tensor:
             yield o.untyped_storage()
 
+# `torch.dtype` is a common object like Python's types.
+MySharedObjects = (*objsize.SharedObjectOrFunctionType, torch.dtype)
 
 def filter_func(o):
-    # `torch.dtype` is a common object like Python's types.
-    return not objsize.safe_is_instance(o, (
-        *objsize.SharedObjectOrFunctionType, torch.dtype
-    ))
+    return not objsize.safe_is_instance(o, MySharedObjects)
 ```
 
 Then use these as follows:
 
 ```pycon
->>> import torch
 >>> objsize.get_deep_size(
 ...   torch.rand(200),
 ...   get_referents_func=get_referents_torch, 
 ...   filter_func=filter_func
 ... )
-976
+928
 ```
 
 ## Case 2: `weakref`
@@ -242,13 +235,11 @@ Then use these as follows:
 Using a simple calculation of the object size won't work for `weakref.proxy`.
 
 ```pycon
->>> import weakref
->>> class Foo(list):
-...     pass
-... 
->>> o = Foo([0]*100)
+>>> from collections import UserList
+>>> o = UserList([0]*100)
 >>> objsize.get_deep_size(o)
-896
+1032
+>>> import weakref
 >>> o_ref = weakref.proxy(o)
 >>> objsize.get_deep_size(o_ref)
 72
@@ -260,10 +251,8 @@ To mitigate this, you can provide a method that attempts to fetch the proxy's re
 import weakref
 import gc
 
-
 def get_weakref_referents(*objs):
     yield from gc.get_referents(*objs)
-
     for o in objs:
         if type(o) in weakref.ProxyTypes:
             try:
@@ -276,7 +265,7 @@ Then use it as follows:
 
 ```pycon
 >>> objsize.get_deep_size(o_ref, get_referents_func=get_weakref_referents)
-968
+1104
 ```
 
 After the referenced object will be collected, then the size of the proxy object will be reduced.
@@ -294,11 +283,14 @@ To avoid repeating the input settings when handling the special cases above, you
 `objsize.ObjSizeSettings()` class.
 
 ```pycon
->>> torch_objsize = objsize.ObjSizeSettings(get_size_func=get_size_of_torch)
+>>> torch_objsize = objsize.ObjSizeSettings(
+...   get_referents_func=get_referents_torch, 
+...   filter_func=filter_func,
+... )
 >>> torch_objsize.get_deep_size(torch.rand(200))
-976
+928
 >>> torch_objsize.get_deep_size(torch.rand(300))
-1376
+1328
 ```
 
 ### ObjSizeSettings Parameters:

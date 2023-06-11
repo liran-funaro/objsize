@@ -23,7 +23,8 @@ jobs:
           pip install .[dev]
       - name: Validate coding conventions
         run: |
-          black --check --diff .
+          black objsize --check --diff
+          black ./*.py --check --diff
       - name: Lint with flake8
         run: |
           flake8 . --count --select=E,F,W,C --show-source --max-complexity=10 --max-line-length=120 --statistics  --per-file-ignores='__init__.py:F401'
@@ -32,11 +33,12 @@ jobs:
           pylint objsize
       - name: Lint with mypy
         run: |
-          mypy objsize
+          mypy objsize --check-untyped-defs
       - name: Test with pytest
         run: |
           pytest --cov=objsize
       - name: Coveralls
+        if: ${{ !env.ACT }} # skip during local actions testing
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.test-name }}
@@ -45,6 +47,7 @@ jobs:
           coveralls --service=github
 
   coveralls:
+    if: ${{ !github.event.act }} # skip during local actions testing
     name: Indicate completion to coveralls.io
     needs: test
     runs-on: ubuntu-latest
