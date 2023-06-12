@@ -1,67 +1,35 @@
-<!---
-Copyright (c) 2006-2023, Liran Funaro.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-3. Neither the name of the copyright holder nor the
-   names of its contributors may be used to endorse or promote products
-   derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
---->
-
 # objsize
 
-[![Coverage Status](https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master)](https://coveralls.io/github/liran-funaro/objsize?branch=master)
-[![Downloads](https://static.pepy.tech/badge/objsize)](https://pepy.tech/project/objsize)
+[![image](https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master)](https://coveralls.io/github/liran-funaro/objsize?branch=master) [![image](https://static.pepy.tech/badge/objsize)](https://pepy.tech/project/objsize)
 
-Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
+The `objsize` Python package allows for the exploration and
+measurement of an object’s complete memory usage in bytes, including its
+child objects. This process, often referred to as deep size calculation,
+is achieved through Python’s internal Garbage Collection (GC) mechanism.
 
-This module traverses all child objects using Python's internal GC implementation.
-It attempts to ignore shared objects (i.e., `None`, types, modules, classes, functions, lambdas), as they are common
-among all objects.
-It is implemented without recursive calls for high performance.
+The `objsize` package is designed to ignore shared objects, such as
+`None`, types, modules, classes, functions, and lambdas, because they
+are shared across many instances. One of the key performance features of
+`objsize` is that it avoids recursive calls, ensuring a faster and
+safer execution.
 
-# Features
+## Key Features
 
-- Traverse objects' subtree
-- Calculate objects' (deep) size in bytes
-- Exclude non-exclusive objects
-- Exclude specified objects subtree
-- Allow the user to specify unique handlers for:
-    - Object's size calculation
-    - Object's referents (i.e., its children)
-    - Object filter (skip specific objects)
 
-[Pympler](https://pythonhosted.org/Pympler/) also supports determining an object deep size via `pympler.asizeof()`.
-There are two main differences between `objsize` and `pympler`.
+* Traverse objects’ subtree
+* Calculates the size of objects, including nested objects (deep size), in bytes
+* Exclude non-exclusive objects
+* Exclude specified objects subtree
+* Provides flexibility by allowing users to define custom handlers for:
+    * Object’s size calculation
+    * Object’s referents (i.e., its children)
+    * Object filter (skip specific objects)
 
-1. `objsize` has additional features:
-    * Traversing the object subtree: iterating all the object's descendants one by one.
-    * Excluding non-exclusive objects. That is, objects that are also referenced from somewhere else in the program.
-      This is true for calculating the object's deep size and for traversing its descendants.
-2. `objsize` has a simple and robust implementation with significantly fewer lines of code, compared to `pympler`.
-   The Pympler implementation uses recursion, and thus have to use a maximal depth argument to avoid reaching Python's
-   max depth.
-   `objsize`, however, uses BFS which is more efficient and simple to follow.
-   Moreover, the Pympler implementation carefully takes care of any object type.
-   `objsize` archives the same goal with a simple and generic implementation, which has fewer lines of code.
+## Documentation
+
+|                                                                                         |                                                                                                    |
+|-----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| [`objsize`](https://liran-funaro.github.io/objsize/library/objsize.html#module-objsize) | Traversal over Python's objects subtree and calculating the total size of the subtree (deep size). |
 
 # Install
 
@@ -79,7 +47,8 @@ Calculate the size of the object including all its members in bytes.
 340
 ```
 
-It is possible to calculate the deep size of multiple objects by passing multiple arguments:
+It is possible to calculate the deep size of multiple objects by passing
+multiple arguments:
 
 ```pycon
 >>> objsize.get_deep_size(['hello', 'world'], dict(arg1='hello', arg2='world'), {'hello', 'world'})
@@ -88,13 +57,14 @@ It is possible to calculate the deep size of multiple objects by passing multipl
 
 # Complex Data
 
-`objsize` can calculate the size of an object's entire subtree in bytes regardless of the type of objects in it, and its
-depth.
+`objsize` can calculate the size of an object’s entire subtree in
+bytes regardless of the type of objects in it, and its depth.
 
-Here is a complex data structure, for example, that include a self reference:
+Here is a complex data structure, for example, that include a self
+reference:
 
 ```python
-my_data = (list(range(3)), list(range(3, 6)))
+my_data = list(range(3)), list(range(3, 6))
 
 class MyClass:
     def __init__(self, x, y):
@@ -103,7 +73,7 @@ class MyClass:
         self.d = {'x': x, 'y': y, 'self': self}
 
     def __repr__(self):
-        return "MyClass"
+        return f"{self.__class__.__name__}()"
 
 my_obj = MyClass(*my_data)
 ```
@@ -115,7 +85,8 @@ We can calculate `my_obj` deep size, including its stored data.
 724
 ```
 
-We might want to ignore non-exclusive objects such as the ones stored in `my_data`.
+We might want to ignore non-exclusive objects such as the ones stored in
+`my_data`.
 
 ```pycon
 >>> objsize.get_deep_size(my_obj, exclude=[my_data])
@@ -131,8 +102,8 @@ Or simply let `objsize` detect that automatically:
 
 # Non Shared Functions or Classes
 
-`objsize` filters functions, lambdas, and classes by default since they are usually shared among many objects.
-For example:
+`objsize` filters functions, lambdas, and classes by default since
+they are usually shared among many objects. For example:
 
 ```pycon
 >>> method_dict = {"identity": lambda x: x, "double": lambda x: x*2}
@@ -140,9 +111,10 @@ For example:
 232
 ```
 
-Some objects, however, as illustrated in the above example, have unique functions not shared by other objects.
-Due to this, it may be useful to count their sizes.
-You can achieve this by providing an alternative filter function.
+Some objects, however, as illustrated in the above example, have unique
+functions not shared by other objects. Due to this, it may be useful to
+count their sizes. You can achieve this by providing an alternative
+filter function.
 
 ```pycon
 >>> objsize.get_deep_size(method_dict, filter_func=objsize.shared_object_filter)
@@ -151,18 +123,22 @@ You can achieve this by providing an alternative filter function.
 
 Notes:
 
-* The default filter function is `objsize.shared_object_or_function_filter`.
-* When using `objsize.shared_object_filter`, shared functions and lambdas are also counted, but builtin functions are
-  still excluded.
+
+* The default filter function is
+[`objsize.traverse.shared_object_or_function_filter()`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.shared_object_or_function_filter).
+* When using [`objsize.traverse.shared_object_filter()`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.shared_object_filter), shared functions and
+lambdas are also counted, but builtin functions are still excluded.
 
 # Special Cases
 
-Some objects handle their data in a way that prevents Python's GC from detecting it.
-The user can supply a special way to calculate the actual size of these objects.
+Some objects handle their data in a way that prevents Python’s GC from
+detecting it. The user can supply a special way to calculate the actual
+size of these objects.
 
-## Case 1: `torch`
+## Case 1: [`torch`](https://pytorch.org/docs/stable/torch.html#module-torch)
 
-Using a simple calculation of the object size won't work for `torch.Tensor`.
+Using a simple calculation of the object size won’t work for
+[`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor).
 
 ```pycon
 >>> import torch
@@ -195,9 +171,9 @@ Then use it as follows:
 872
 ```
 
-The above approach may neglect the object's internal structure.
-The user can help `objsize` to find the object's hidden storage by supplying it with its own referent and filter
-functions:
+The above approach may neglect the object’s internal structure. The user
+can help `objsize` to find the object’s hidden storage by supplying it
+with its own referent and filter functions:
 
 ```python
 import objsize
@@ -224,15 +200,16 @@ Then use these as follows:
 ```pycon
 >>> objsize.get_deep_size(
 ...   torch.rand(200),
-...   get_referents_func=get_referents_torch, 
+...   get_referents_func=get_referents_torch,
 ...   filter_func=filter_func
 ... )
 928
 ```
 
-## Case 2: `weakref`
+## Case 2: [`weakref`](https://docs.python.org/3/library/weakref.html#module-weakref)
 
-Using a simple calculation of the object size won't work for `weakref.proxy`.
+Using a simple calculation of the object size won’t work for
+`weakref.proxy`.
 
 ```pycon
 >>> from collections import UserList
@@ -245,7 +222,8 @@ Using a simple calculation of the object size won't work for `weakref.proxy`.
 72
 ```
 
-To mitigate this, you can provide a method that attempts to fetch the proxy's referents:
+To mitigate this, you can provide a method that attempts to fetch the
+proxy’s referents:
 
 ```python
 import weakref
@@ -268,23 +246,25 @@ Then use it as follows:
 1104
 ```
 
-After the referenced object will be collected, then the size of the proxy object will be reduced.
+After the referenced object will be collected, then the size of the
+proxy object will be reduced.
 
 ```pycon
 >>> del o
 >>> gc.collect()
->>> # Wait for the object to be collected 
+>>> # Wait for the object to be collected
 >>> objsize.get_deep_size(o_ref, get_referents_func=get_weakref_referents)
 72
 ```
 
 # Object Size Settings
-To avoid repeating the input settings when handling the special cases above, you can use the
-`objsize.ObjSizeSettings()` class.
+
+To avoid repeating the input settings when handling the special cases
+above, you can use the [`ObjSizeSettings`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.ObjSizeSettings) class.
 
 ```pycon
 >>> torch_objsize = objsize.ObjSizeSettings(
-...   get_referents_func=get_referents_torch, 
+...   get_referents_func=get_referents_torch,
 ...   filter_func=filter_func,
 ... )
 >>> torch_objsize.get_deep_size(torch.rand(200))
@@ -293,34 +273,23 @@ To avoid repeating the input settings when handling the special cases above, you
 1328
 ```
 
-### ObjSizeSettings Parameters:
-* `filter_func`:
-        Receives an objects and return `True` if the object---and its subtree---should be traversed.
-        Default: `objsize.shared_object_filter`.
-        By default, this excludes shared objects, i.e., types, modules, functions, and lambdas.
-* `get_referents_func`:
-        Receives any number of objects and returns iterable over the objects that are referred by these objects.
-        Default: `gc.get_referents()`.
-        See: https://docs.python.org/3/library/gc.html#gc.get_referents
-* `exclude`:
-        Objects that will be excluded from this calculation, as well as their subtrees.
-* `exclude_modules_globals`:
-        If True (default), loaded modules globals will be added to the `exclude_set`.
+See [`ObjSizeSettings`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.ObjSizeSettings) for the
+list of configurable parameters.
 
 # Traversal
 
-A user can implement its own function over the entire subtree using the traversal method, which traverses all the
-objects in the subtree.
+A user can implement its own function over the entire subtree using the
+traversal method, which traverses all the objects in the subtree.
 
 ```pycon
 >>> for o in objsize.traverse_bfs(my_obj):
 ...     print(o)
-... 
-MyClass
-{'x': [0, 1, 2], 'y': [3, 4, 5], 'd': {'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass}}
+...
+MyClass()
+{'x': [0, 1, 2], 'y': [3, 4, 5], 'd': {'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass()}}
 [0, 1, 2]
 [3, 4, 5]
-{'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass}
+{'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass()}
 2
 1
 0
@@ -334,12 +303,63 @@ Similar to before, non-exclusive objects can be ignored.
 ```pycon
 >>> for o in objsize.traverse_exclusive_bfs(my_obj):
 ...     print(o)
-... 
-MyClass
-{'x': [0, 1, 2], 'y': [3, 4, 5], 'd': {'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass}}
-{'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass}
+...
+MyClass()
+{'x': [0, 1, 2], 'y': [3, 4, 5], 'd': {'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass()}}
+{'x': [0, 1, 2], 'y': [3, 4, 5], 'self': MyClass()}
 ```
 
-# License
+# Alternative
 
-[BSD-3](LICENSE)
+[Pympler](https://pythonhosted.org/Pympler/) also supports
+determining an object deep size via `pympler.asizeof()`. There are two
+main differences between `objsize` and `pympler`.
+
+
+1. `objsize` has additional features:
+    * Traversing the object subtree: iterating all the object’s
+descendants one by one.
+    * Excluding non-exclusive objects. That is, objects that are also
+referenced from somewhere else in the program. This is true for
+calculating the object’s deep size and for traversing its
+descendants.
+
+
+2. `objsize` has a simple and robust implementation with significantly
+fewer lines of code, compared to `pympler`. The Pympler
+implementation uses recursion, and thus have to use a maximal depth
+argument to avoid reaching Python’s max depth. `objsize`, however,
+uses BFS which is more efficient and simple to follow. Moreover, the
+Pympler implementation carefully takes care of any object type.
+`objsize` archives the same goal with a simple and generic
+implementation, which has fewer lines of code.
+
+# License: BSD-3
+
+Copyright (c) 2006-2023, Liran Funaro.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the
+names of its contributors may be used to endorse or promote products
+derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

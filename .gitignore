@@ -109,3 +109,4 @@ venv.bak/
 requirements.txt
 test_workflow.sh
 release.sh
+docs/source/library

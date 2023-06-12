@@ -1,31 +1,5 @@
 """
-Author: Liran Funaro <liran.funaro@gmail.com>
-
-Copyright (c) 2006-2023, Liran Funaro.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-3. Neither the name of the copyright holder nor the
-   names of its contributors may be used to endorse or promote products
-   derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
+Handling of traversal.
 """
 import collections
 import gc
@@ -33,13 +7,13 @@ import inspect
 import sys
 import types
 import warnings
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Set, Tuple
 
 # Common type: a set of objects' ID
 MarkedSet = Set[int]
 FilterFunc = Callable[[Any], bool]
 GetReferentsFunc = Callable[..., Iterable[Any]]
+SizeFunc = Callable[[Any], int]
 
 SharedObjectType = (
     type,
@@ -58,10 +32,22 @@ SharedObjectOrFunctionType = (
 def safe_is_instance(obj: Any, type_tuple) -> bool:
     """
     Return whether an object is an instance of a class or of a subclass thereof.
-    See `isinstance()` for more information.
+    See :py:func:`isinstance()` for more information.
 
-    Catches `ReferenceError` because applying `isinstance()` on `weakref.proxy`
+    Catches :class:`ReferenceError` because applying :py:func:`isinstance()` on :py:func:`weakref.proxy`
     objects attempts to dereference the proxy objects, which may yield an exception.
+
+    Parameters
+    ----------
+    obj :
+        Any object
+    type_tuple :
+        A type or a tuple of types
+
+    Returns
+    -------
+    bool
+        True if the objects matches one of the types
     """
     try:
         return isinstance(obj, type_tuple)
@@ -79,10 +65,12 @@ def shared_object_filter(obj: Any) -> bool:
     return not safe_is_instance(obj, SharedObjectType)
 
 
-# See https://docs.python.org/3/library/gc.html#gc.get_referents
 default_get_referents = gc.get_referents
-# By default, we filter shared objects, i.e., types, modules, functions, and lambdas
+"""See https://docs.python.org/3/library/gc.html#gc.get_referents"""
 default_object_filter = shared_object_or_function_filter
+"""By default, we filter shared objects, i.e., types, modules, functions, and lambdas"""
+default_get_size = sys.getsizeof
+"""See https://docs.python.org/3/library/sys.html#sys.getsizeof"""
 
 
 def _iter_modules_globals():
@@ -94,68 +82,143 @@ def _iter_modules_globals():
             pass
 
 
-@dataclass(frozen=True)
-class TraversalSettings:
-    """
-    Object traversal settings.
+def _default(optional_value, default_value):
+    if optional_value is None:
+        return default_value
+    return optional_value
 
-    Attributes
+
+def _default_generator(optional_value, default_value_generator):
+    if optional_value is None:
+        return default_value_generator()
+    return optional_value
+
+
+class ObjSizeSettings:
+    """
+    Object traversal and size settings.
+
+    Parameters
     ----------
-    filter_func : callable
-        Receives an objects and return `True` if the object---and its subtree---should be traversed.
-        Default: `objsize.shared_object_filter`.
+    filter_func :
+        Receives an objects and return :py:obj:`True` if the object---and its subtree---should be traversed.
+        Default: :py:func:`shared_object_filter`.
         By default, this excludes shared objects, i.e., types, modules, functions, and lambdas.
-    get_referents_func : callable
+    get_referents_func :
         Receives any number of objects and returns iterable over the objects that are referred by these objects.
-        Default: `gc.get_referents()`.
-        See: https://docs.python.org/3/library/gc.html#gc.get_referents
-    exclude : iterable, optional
+        Default: :py:func:`gc.get_referents`.
+    get_size_func :
+        A function that determines the object size.
+        Default: :py:func:`sys.getsizeof`.
+    exclude :
         Objects that will be excluded from this calculation, as well as their subtrees.
-    exclude_modules_globals : bool
-        If True (default), loaded modules globals will be added to the `exclude_set`.
+    exclude_modules_globals :
+        If True (default), loaded modules globals will be added to the
+        :py:attr:`~TraversalContext.exclude_set`.
     """
 
-    get_referents_func: GetReferentsFunc = default_get_referents
-    filter_func: FilterFunc = default_object_filter
-    exclude: Optional[Iterable] = None
-    exclude_modules_globals: bool = True
+    def __init__(
+        self,
+        get_referents_func: Optional[GetReferentsFunc] = None,
+        filter_func: Optional[FilterFunc] = None,
+        get_size_func: Optional[SizeFunc] = None,
+        exclude: Optional[Iterable] = None,
+        exclude_modules_globals: Optional[bool] = None,
+    ):
+        self.get_referents_func = _default(get_referents_func, default_get_referents)
+        self.filter_func = _default(filter_func, default_object_filter)
+        self.get_size_func = _default(get_size_func, default_get_size)
+        self.exclude = _default(exclude, None)
+        self.exclude_modules_globals = _default(exclude_modules_globals, True)
+
+    def replace(
+        self,
+        get_referents_func: Optional[GetReferentsFunc] = None,
+        filter_func: Optional[FilterFunc] = None,
+        get_size_func: Optional[SizeFunc] = None,
+        exclude: Optional[Iterable] = None,
+        exclude_modules_globals: Optional[bool] = None,
+    ) -> "ObjSizeSettings":
+        """
+        Replaces some of the settings into a new settings object.
+
+        Returns
+        -------
+            A new settings instance
+        """
+        return ObjSizeSettings(
+            get_referents_func=_default(get_referents_func, self.get_referents_func),
+            filter_func=_default(filter_func, self.filter_func),
+            get_size_func=_default(get_size_func, self.get_size_func),
+            exclude=_default(exclude, self.exclude),
+            exclude_modules_globals=_default(exclude_modules_globals, self.exclude_modules_globals),
+        )
+
+    def update(
+        self,
+        get_referents_func: Optional[GetReferentsFunc] = None,
+        filter_func: Optional[FilterFunc] = None,
+        get_size_func: Optional[SizeFunc] = None,
+        exclude: Optional[Iterable] = None,
+        exclude_modules_globals: Optional[bool] = None,
+    ):
+        """
+        Updates some of the settings in place.
+        """
+        self.get_referents_func = _default(get_referents_func, self.get_referents_func)
+        self.filter_func = _default(filter_func, self.filter_func)
+        self.get_size_func = _default(get_size_func, self.get_size_func)
+        self.exclude = _default(exclude, self.exclude)
+        self.exclude_modules_globals = _default(exclude_modules_globals, self.exclude_modules_globals)
 
     def new_context(self, *, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None):
-        """See `TraversalContext`"""
+        """See :py:class:`TraversalContext`."""
         return TraversalContext(self, marked_set, exclude_set)
 
     def traverse_bfs(
         self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
     ) -> Iterator[Any]:
-        """See `TraversalContext.traverse_bfs()`"""
+        """See :py:meth:`TraversalContext.traverse_bfs`"""
         yield from self.new_context(marked_set=marked_set, exclude_set=exclude_set).traverse_bfs(*objs)
 
     def traverse_exclusive_bfs(
         self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
     ) -> Iterator[Any]:
-        """See `TraversalContext.traverse_exclusive_bfs()`"""
+        """See :py:meth:`TraversalContext.traverse_exclusive_bfs`"""
         yield from self.new_context(marked_set=marked_set, exclude_set=exclude_set).traverse_exclusive_bfs(*objs)
+
+    def get_deep_size(
+        self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
+    ) -> int:
+        """See :py:meth:`TraversalContext.get_deep_size`"""
+        return self.new_context(marked_set=marked_set, exclude_set=exclude_set).get_deep_size(*objs)
+
+    def get_exclusive_deep_size(
+        self, *objs: Any, marked_set: Optional[MarkedSet] = None, exclude_set: Optional[MarkedSet] = None
+    ) -> int:
+        """See :py:meth:`TraversalContext.get_exclusive_deep_size`"""
+        return self.new_context(marked_set=marked_set, exclude_set=exclude_set).get_exclusive_deep_size(*objs)
 
 
 class TraversalContext:
     """
     Object traversal context.
 
-    Attributes
+    Parameters
     ----------
-    settings : ObjectIterSettings, optional
-        See `ObjectIterSettings`
-    marked_set : set, optional
+    settings :
+        See :py:class:`ObjSizeSettings`
+    marked_set :
         An existing set of marked objects' ID, i.e., `id(obj)`.
         Objects that their ID is in this set will not be traversed.
         If a set is given, it will be updated with all the traversed objects' ID.
-    exclude_set : set, optional
+    exclude_set :
         Similar to the marked set, but contains excluded objects' ID.
     """
 
     def __init__(
         self,
-        settings: Optional[TraversalSettings] = None,
+        settings: Optional[ObjSizeSettings] = None,
         marked_set: Optional[MarkedSet] = None,
         exclude_set: Optional[MarkedSet] = None,
     ):
@@ -165,9 +228,9 @@ class TraversalContext:
                 "Please use objsize.traverse.TraversalContext(settings) instead.",
                 DeprecationWarning,
             )
-        self.settings = settings if settings is not None else TraversalSettings()
-        self.marked_set = marked_set if marked_set is not None else set()
-        self.exclude_set = exclude_set if exclude_set is not None else set()
+        self.settings = _default_generator(settings, ObjSizeSettings)
+        self.marked_set = _default_generator(marked_set, set)
+        self.exclude_set = _default_generator(exclude_set, set)
         self._update_exclude_set()
 
     def _update_exclude_set(self):
@@ -185,28 +248,20 @@ class TraversalContext:
         if self.settings.exclude is not None:
             collections.deque(self.traverse_bfs(*self.settings.exclude, exclude=True), maxlen=0)
 
-    def obj_filter_iterator(self, obj_it: Iterable[Any]) -> Iterator[Tuple[int, Any]]:
+    def _obj_filter_iterator(self, obj_it: Iterable[Any]) -> Iterator[Tuple[int, Any]]:
         """
         Filters the input. Only yields objects such that:
          - Object ID was not already marked/excluded (using the marked-set/exclude-set).
          - Object pass the given filter function (see above).
-
-        Parameters
-        ----------
-        obj_it: iterable
-
-        Yields
-        -------
-        A tuple (obj-id, obj) which is a subset of the input.
         """
         for obj in obj_it:
             obj_id = id(obj)
             if obj_id not in self.marked_set and obj_id not in self.exclude_set and self.settings.filter_func(obj):
                 yield obj_id, obj
 
-    def filter(self, obj_it: Iterable[Any]) -> Dict[int, Any]:
+    def _filter(self, obj_it: Iterable[Any]) -> Dict[int, Any]:
         """Apply filter, and screen repeated objects (using dict notation)."""
-        return dict(self.obj_filter_iterator(obj_it))
+        return dict(self._obj_filter_iterator(obj_it))
 
     def traverse_bfs(self, *objs: Any, exclude=False) -> Iterator[Any]:
         """
@@ -233,7 +288,7 @@ class TraversalContext:
 
         while obj_it:
             # Apply filter, and screen repeated objects.
-            objs_map = self.filter(obj_it)
+            objs_map = self._filter(obj_it)
 
             # We stop when there are no new valid objects to traverse.
             if not objs_map:
@@ -265,7 +320,7 @@ class TraversalContext:
 
         See Also
         --------
-        traverse_bfs : to understand which objects are traversed.
+        :py:meth:`traverse_bfs` : to understand which objects are traversed.
         """
         # The arguments are considered the root objects, which we include regardless of their exclusiveness.
         root_obj_ids = set(map(id, objs))
@@ -286,3 +341,44 @@ class TraversalContext:
         for obj in subtree:
             if id(obj) in root_obj_ids or frame_set.issuperset(map(id, gc.get_referrers(obj))):
                 yield obj
+
+    def get_deep_size(self, *objs: Any) -> int:
+        """
+        Calculates the deep size of all the arguments.
+
+        Parameters
+        ----------
+        objs : object(s)
+            One or more object(s).
+
+        Returns
+        -------
+        int
+            The objects' deep size in bytes.
+
+        See Also
+        --------
+        :py:func:`~objsize.traverse.TraversalContext.traverse_bfs` : to understand which objects are traversed.
+        """
+        return sum(map(self.settings.get_size_func, self.traverse_bfs(*objs)))
+
+    def get_exclusive_deep_size(self, *objs: Any) -> int:
+        """
+        Calculates the deep size of all the arguments, excluding non-exclusive objects.
+
+        Parameters
+        ----------
+        objs : object(s)
+            One or more object(s).
+
+        Returns
+        -------
+        int
+            The objects' deep size in bytes.
+
+        See Also
+        --------
+        :py:func:`~objsize.traverse.TraversalContext.traverse_exclusive_bfs` :
+            to understand which objects are traversed.
+        """
+        return sum(map(self.settings.get_size_func, self.traverse_exclusive_bfs(*objs)))

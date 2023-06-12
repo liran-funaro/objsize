@@ -1,33 +1,5 @@
 """
 Unittests for `objsize`.
-
-Author: Liran Funaro <liran.funaro@gmail.com>
-
-Copyright (c) 2006-2023, Liran Funaro.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-3. Neither the name of the copyright holder nor the
-   names of its contributors may be used to endorse or promote products
-   derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
 """
 import gc
 import random
@@ -36,7 +8,7 @@ import threading
 import uuid
 import weakref
 from collections import namedtuple
-from typing import Any, List
+from typing import Any, List, Iterator
 
 import pytest
 
@@ -67,6 +39,25 @@ class FakeClass:
     @staticmethod
     def sizeof(o):
         return calc_class_obj_sz(o)
+
+
+def _test_all_update_techniques(**kwargs) -> Iterator[objsize.ObjSizeSettings]:
+    yield objsize.ObjSizeSettings(**kwargs)
+    yield objsize.ObjSizeSettings().replace(**kwargs)
+    settings = objsize.ObjSizeSettings()
+    settings.update(**kwargs)
+    yield settings
+
+
+def get_weakref_referents(*objs):
+    yield from gc.get_referents(*objs)
+
+    for o in objs:
+        if type(o) in weakref.ProxyTypes:
+            try:
+                yield o.__repr__.__self__
+            except ReferenceError:
+                pass
 
 
 ##################################################################
@@ -119,6 +110,8 @@ def test_exclude():
     expected_sz -= sys.getsizeof(exclude[0])
 
     assert expected_sz == objsize.get_deep_size(obj, exclude=exclude)
+    for cur_objsize in _test_all_update_techniques(exclude=exclude):
+        assert expected_sz == cur_objsize.get_deep_size(obj)
 
 
 def test_exclusive_exclude():
@@ -136,6 +129,8 @@ def test_exclusive_exclude():
 
     gc.collect()
     assert expected_sz == objsize.get_exclusive_deep_size(obj, exclude=exclude)
+    for cur_objsize in _test_all_update_techniques(exclude=exclude):
+        assert expected_sz == cur_objsize.get_exclusive_deep_size(obj)
 
 
 def test_size_func():
@@ -150,6 +145,8 @@ def test_size_func():
             return sys.getsizeof(o)
 
     assert expected_sz == objsize.get_deep_size(obj, get_size_func=size_func)
+    for cur_objsize in _test_all_update_techniques(get_size_func=size_func):
+        assert expected_sz == cur_objsize.get_deep_size(obj)
 
 
 def test_referents_func():
@@ -167,6 +164,8 @@ def test_referents_func():
                 yield additional_obj
 
     assert expected_sz == objsize.get_deep_size(obj, get_referents_func=referents_func)
+    for cur_objsize in _test_all_update_techniques(get_referents_func=referents_func):
+        assert expected_sz == cur_objsize.get_deep_size(obj)
 
 
 def test_filter_func():
@@ -181,6 +180,8 @@ def test_filter_func():
         return objsize.default_object_filter(o) and o != subtree
 
     assert expected_sz == objsize.get_deep_size(obj, filter_func=filter_func)
+    for cur_objsize in _test_all_update_techniques(filter_func=filter_func):
+        assert expected_sz == cur_objsize.get_deep_size(obj)
 
 
 def test_class_with_none():
@@ -200,9 +201,14 @@ def test_class_with_string():
 
 def test_with_function():
     obj = {"func": lambda x: x}
-    without_functions = objsize.get_deep_size(obj, filter_func=objsize.shared_object_or_function_filter)
-    with_functions = objsize.get_deep_size(obj, filter_func=objsize.shared_object_filter)
-    assert with_functions > without_functions
+    with_functions = _test_all_update_techniques(filter_func=objsize.shared_object_filter)
+    without_functions = _test_all_update_techniques(filter_func=objsize.shared_object_or_function_filter)
+    for wf, wof in zip(with_functions, without_functions):
+        assert wf.get_deep_size(obj) > wof.get_deep_size(obj)
+
+    with_functions_sz = objsize.get_deep_size(obj, filter_func=objsize.shared_object_filter)
+    without_functions_sz = objsize.get_deep_size(obj, filter_func=objsize.shared_object_or_function_filter)
+    assert with_functions_sz > without_functions_sz
 
 
 def test_size_of_weak_ref():
@@ -213,28 +219,24 @@ def test_size_of_weak_ref():
     expected_sz = get_flat_list_expected_size(obj)
     assert expected_sz == objsize.get_deep_size(obj)
 
-    def get_weakref_referents(*objs):
-        yield from gc.get_referents(*objs)
-
-        for o in objs:
-            if type(o) in weakref.ProxyTypes:
-                try:
-                    yield o.__repr__.__self__
-                except ReferenceError:
-                    pass
-
     wait_event = threading.Event()
     obj_proxy = weakref.proxy(obj, lambda value: wait_event.set())
     proxy_sz = sys.getsizeof(obj_proxy)
+    expected_with_proxy_sz = proxy_sz + expected_sz
 
     assert proxy_sz == objsize.get_deep_size(obj_proxy)
-    assert proxy_sz + expected_sz == objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents)
+    assert expected_with_proxy_sz == objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents)
+    for cur_objsize in _test_all_update_techniques(get_referents_func=get_weakref_referents):
+        assert expected_with_proxy_sz == cur_objsize.get_deep_size(obj_proxy)
+
     del obj
 
     gc.collect()
     wait_event.wait()
 
     assert proxy_sz == objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents)
+    for cur_objsize in _test_all_update_techniques(get_referents_func=get_weakref_referents):
+        assert proxy_sz == cur_objsize.get_deep_size(obj_proxy)
 
 
 # noinspection PyDeprecation

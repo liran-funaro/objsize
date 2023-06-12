@@ -1,47 +1,18 @@
 """
-Traversal over Python's objects subtree and calculating
-the total size of the subtree (deep size).
-
-Author: Liran Funaro <liran.funaro@gmail.com>
-
-Copyright (c) 2006-2023, Liran Funaro.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-3. Neither the name of the copyright holder nor the
-   names of its contributors may be used to endorse or promote products
-   derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
+Traversal over Python's objects subtree and calculating the total size of the subtree (deep size).
 """
 import warnings
 from typing import Any, Iterable, Iterator, Optional
 
-from objsize.size import ObjSizeSettings, SizeFunc, default_get_size
 from objsize.traverse import (
     FilterFunc,
     GetReferentsFunc,
     MarkedSet,
+    ObjSizeSettings,
     SharedObjectOrFunctionType,
     SharedObjectType,
+    SizeFunc,
     TraversalContext,
-    TraversalSettings,
     default_get_referents,
     default_object_filter,
     safe_is_instance,
@@ -51,15 +22,21 @@ from objsize.traverse import (
 
 __version__ = "0.6.1"
 
+default_settings = ObjSizeSettings()
+"""
+The default instance :py:class:`obj objsize settings <objsize.traverse.ObjSizeSettings>`.
+It can be updated to modify the default behaviour of objsize.
+"""
+
 
 def traverse_bfs(
     *objs,
     exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
     exclude_set: Optional[MarkedSet] = None,
-    get_referents_func: GetReferentsFunc = default_get_referents,
-    filter_func: FilterFunc = default_object_filter,
-    exclude_modules_globals: bool = True,
+    get_referents_func: Optional[GetReferentsFunc] = None,
+    filter_func: Optional[FilterFunc] = None,
+    exclude_modules_globals: Optional[bool] = None,
 ) -> Iterator[Any]:
     """
     Traverse all the arguments' subtree.
@@ -69,25 +46,25 @@ def traverse_bfs(
     ----------
     objs : object(s)
         One or more object(s).
-    exclude : iterable, optional
-        See `TraversalSettings`.
-    marked_set : set, optional
-        See `TraversalContext`.
-    exclude_set : set, optional
-        See `TraversalContext`.
-    get_referents_func : callable
-        See `TraversalSettings`.
-    filter_func : callable
-        See `TraversalSettings`.
-    exclude_modules_globals : bool
-        See `TraversalSettings`.
+    exclude :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    marked_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    exclude_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    get_referents_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    filter_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    exclude_modules_globals :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
 
     Yields
     ------
     object
         The traversed objects, one by one.
     """
-    settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
+    settings = default_settings.replace(get_referents_func, filter_func, None, exclude, exclude_modules_globals)
     yield from settings.traverse_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
@@ -96,9 +73,9 @@ def traverse_exclusive_bfs(
     exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
     exclude_set: Optional[MarkedSet] = None,
-    get_referents_func: GetReferentsFunc = default_get_referents,
-    filter_func: FilterFunc = default_object_filter,
-    exclude_modules_globals: bool = True,
+    get_referents_func: Optional[GetReferentsFunc] = None,
+    filter_func: Optional[FilterFunc] = None,
+    exclude_modules_globals: Optional[bool] = None,
 ) -> Iterator[Any]:
     """
     Traverse all the arguments' subtree, excluding non-exclusive objects.
@@ -108,18 +85,18 @@ def traverse_exclusive_bfs(
     ----------
     objs : object(s)
         One or more object(s).
-    exclude : iterable, optional
-        See `TraversalSettings`.
-    marked_set : set, optional
-        See `TraversalContext`.
-    exclude_set : set, optional
-        See `TraversalContext`.
-    get_referents_func : callable
-        See `TraversalSettings`.
-    filter_func : callable
-        See `TraversalSettings`.
-    exclude_modules_globals : bool
-        See `TraversalSettings`.
+    exclude :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    marked_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    exclude_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    get_referents_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    filter_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    exclude_modules_globals :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
 
     Yields
     ------
@@ -130,19 +107,19 @@ def traverse_exclusive_bfs(
     --------
     traverse_bfs : to understand which objects are traversed.
     """
-    settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
+    settings = default_settings.replace(get_referents_func, filter_func, None, exclude, exclude_modules_globals)
     yield from settings.traverse_exclusive_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_deep_size(
     *objs,
-    exclude: Optional[Iterable] = None,
+    exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
     exclude_set: Optional[MarkedSet] = None,
-    get_size_func=default_get_size,
-    get_referents_func=default_get_referents,
-    filter_func=default_object_filter,
-    exclude_modules_globals: bool = True,
+    get_size_func: Optional[SizeFunc] = None,
+    get_referents_func: Optional[GetReferentsFunc] = None,
+    filter_func: Optional[FilterFunc] = None,
+    exclude_modules_globals: Optional[bool] = None,
 ) -> int:
     """
     Calculates the deep size of all the arguments.
@@ -151,20 +128,20 @@ def get_deep_size(
     ----------
     objs : object(s)
         One or more object(s).
-    exclude : iterable, optional
-        See `TraversalSettings`.
-    marked_set : set, optional
-        See `TraversalContext`.
-    exclude_set : set, optional
-        See `TraversalContext`.
-    get_size_func : function, optional
-        See `ObjSizeSettings`.
-    get_referents_func : callable
-        See `TraversalSettings`.
-    filter_func : callable
-        See `TraversalSettings`.
-    exclude_modules_globals : bool
-        See `TraversalSettings`.
+    exclude :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    marked_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    exclude_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    get_size_func :
+        See :py:class:`~objsize.size.ObjSizeSettings`.
+    get_referents_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    filter_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    exclude_modules_globals :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
 
     Returns
     -------
@@ -175,19 +152,21 @@ def get_deep_size(
     --------
     traverse_bfs : to understand which objects are traversed.
     """
-    settings = ObjSizeSettings(get_referents_func, filter_func, exclude, exclude_modules_globals, get_size_func)
+    settings = default_settings.replace(
+        get_referents_func, filter_func, get_size_func, exclude, exclude_modules_globals
+    )
     return settings.get_deep_size(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
 def get_exclusive_deep_size(
     *objs,
-    exclude: Optional[Iterable] = None,
+    exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
     exclude_set: Optional[MarkedSet] = None,
-    get_size_func=default_get_size,
-    get_referents_func=default_get_referents,
-    filter_func=default_object_filter,
-    exclude_modules_globals: bool = True,
+    get_size_func: Optional[SizeFunc] = None,
+    get_referents_func: Optional[GetReferentsFunc] = None,
+    filter_func: Optional[FilterFunc] = None,
+    exclude_modules_globals: Optional[bool] = None,
 ) -> int:
     """
     Calculates the deep size of all the arguments, excluding non-exclusive objects.
@@ -196,20 +175,20 @@ def get_exclusive_deep_size(
     ----------
     objs : object(s)
         One or more object(s).
-    exclude : iterable, optional
-        See `TraversalSettings`.
-    marked_set : set, optional
-        See `TraversalContext`.
-    exclude_set : set, optional
-        See `TraversalContext`.
-    get_size_func : function, optional
-        See `ObjSizeSettings`.
-    get_referents_func : callable
-        See `TraversalSettings`.
-    filter_func : callable
-        See `TraversalSettings`.
-    exclude_modules_globals : bool
-        See `TraversalSettings`.
+    exclude :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    marked_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    exclude_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    get_size_func :
+        See :py:class:`~objsize.size.ObjSizeSettings`.
+    get_referents_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    filter_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    exclude_modules_globals :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
 
     Returns
     -------
@@ -220,7 +199,9 @@ def get_exclusive_deep_size(
     --------
     traverse_exclusive_bfs : to understand which objects are traversed.
     """
-    settings = ObjSizeSettings(get_referents_func, filter_func, exclude, exclude_modules_globals, get_size_func)
+    settings = default_settings.replace(
+        get_referents_func, filter_func, get_size_func, exclude, exclude_modules_globals
+    )
     return settings.get_exclusive_deep_size(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
@@ -230,30 +211,35 @@ def get_exclude_set(
     get_referents_func: GetReferentsFunc = default_get_referents,
     filter_func: FilterFunc = default_object_filter,
     exclude_modules_globals: bool = False,
-) -> Optional[set]:
+) -> set:
     """
-    objsize.get_exclude_set() is deprecated. It will be removed on version 1.0.0.
-
     Traverse all the arguments' subtree without ingesting the result, just to update the `exclude_set`.
     See `traverse_bfs()` for more information.
 
+    :deprecated: It will be removed on version 1.0.0.
+
     Parameters
     ----------
-    exclude : iterable, optional
+    exclude :
         One or more object(s).
-    exclude_set : set, optional
-        See `ObjectFilter`.
-    get_referents_func : callable
-        See `ObjectIterSettings`.
-    filter_func : callable
-        See `ObjectIterSettings`.
-    exclude_modules_globals : bool
-        See `ObjectIterSettings`.
+    exclude_set :
+        See :py:class:`~objsize.traverse.TraversalContext`.
+    get_referents_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    filter_func :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
+    exclude_modules_globals :
+        See :py:class:`~objsize.traverse.ObjSizeSettings`.
 
     Returns
     -------
-    The updated exclude-set.
+    set
+        The updated exclude-set.
+
+    Attention
+    ---------
+    Deprecated. It will be removed on version 1.0.0.
     """
     warnings.warn("objsize.get_exclude_set() is deprecated. It will be removed on version 1.0.0.", DeprecationWarning)
-    settings = TraversalSettings(get_referents_func, filter_func, exclude, exclude_modules_globals)
+    settings = default_settings.replace(get_referents_func, filter_func, None, exclude, exclude_modules_globals)
     return settings.new_context(exclude_set=exclude_set).exclude_set
