@@ -27,6 +27,10 @@ readme: doc-markdown
 	cp "$(BUILD_DIR)/markdown/index.md" README.md
 
 
+server:
+	python3 -m http.server --directory "$(BUILD_DIR)/html"
+
+
 release:
 	@rm -rf dist/*
 	python3 -m build || exit
