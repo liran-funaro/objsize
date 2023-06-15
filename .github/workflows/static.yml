@@ -40,13 +40,11 @@ jobs:
           pip install .[docs]
       - name: Make pages
         run: |
-          cd docs
-          make html
+          make doc-html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          # Upload entire repository
-          path: 'docs/build/html'
+          path: 'docs-build/html'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2

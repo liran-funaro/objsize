@@ -107,6 +107,5 @@ venv.bak/
 .mypy_cache/
 
 requirements.txt
-test_workflow.sh
-release.sh
-docs/source/library
+docs/library
+docs-build

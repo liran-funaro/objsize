@@ -138,7 +138,6 @@ Notes:
 -  When using :py:func:`objsize.traverse.shared_object_filter`, shared functions and
    lambdas are also counted, but builtin functions are still excluded.
 
-
 Special Cases
 =============
 
@@ -352,7 +351,7 @@ main differences between ``objsize`` and ``pympler``.
 License: BSD-3
 ==============
 
-.. include:: ../../LICENSE
+.. include:: ../LICENSE
    :parser: myst_parser.sphinx_
 
 .. |Coverage Status| image:: https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master

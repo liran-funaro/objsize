@@ -50,7 +50,7 @@ requires-python = ">=3.7"
 
 [project.optional-dependencies]
 dev = [
-    "bumpver", "black", "isort", "flake8", "pylint", "mypy", "pip-tools", "pytest", "pytest-cov", "coveralls",
+    "bumpver", "black", "isort", "flake8", "pylint", "mypy", "pip-tools", "pytest", "pytest-cov", "coveralls", "pyyaml"
 ]
 docs = [
     "sphinx", "sphinx-rtd-theme", "sphinx_rtd_dark_mode", "myst_parser",

@@ -6,7 +6,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -59,7 +59,9 @@ markdown_http_base = "https://liran-funaro.github.io/objsize"
 markdown_uri_doc_suffix = ".html"
 
 html_theme = "sphinx_rtd_theme"
+html_favicon = "_static/py.svg"
+# html_theme = "python_docs_theme"
 # user starts in light mode
 default_dark_mode = False
 
-html_static_path = []
+html_static_path = ["_static"]

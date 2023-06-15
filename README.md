@@ -15,7 +15,6 @@ safer execution.
 
 ## Key Features
 
-
 * Traverse objects’ subtree
 * Calculates the size of objects, including nested objects (deep size), in bytes
 * Exclude non-exclusive objects
@@ -122,7 +121,6 @@ filter function.
 ```
 
 Notes:
-
 
 * The default filter function is
 [`objsize.traverse.shared_object_or_function_filter()`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.shared_object_or_function_filter).
@@ -315,7 +313,6 @@ MyClass()
 determining an object deep size via `pympler.asizeof()`. There are two
 main differences between `objsize` and `pympler`.
 
-
 1. `objsize` has additional features:
     * Traversing the object subtree: iterating all the object’s
 descendants one by one.
@@ -323,8 +320,6 @@ descendants one by one.
 referenced from somewhere else in the program. This is true for
 calculating the object’s deep size and for traversing its
 descendants.
-
-
 2. `objsize` has a simple and robust implementation with significantly
 fewer lines of code, compared to `pympler`. The Pympler
 implementation uses recursion, and thus have to use a maximal depth
@@ -341,7 +336,6 @@ All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 
 1. Redistributions of source code must retain the above copyright
 notice, this list of conditions and the following disclaimer.
