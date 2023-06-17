@@ -46,7 +46,6 @@ push = false
 "pyproject.toml" = [
     "current_version = \"{version}\"",
     "version = \"{version}\"",
-    "Copyright (c) 2006-YYYY, Liran Funaro.",
 ]
 "README.md" = [
     "objsize=={version}",
@@ -60,6 +59,7 @@ push = false
 ]
 "docs/conf.py" = [
     "^version = \"{version}\"$",
+    "Copyright (c) 2006-YYYY, Liran Funaro.",
 ]
 "docs/index.rst" = [
     "objsize=={version}",

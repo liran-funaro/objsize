@@ -26,9 +26,8 @@ safer execution.
 
 ## Documentation
 
-|                                                                                         |                                                                                                    |
-|-----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| [`objsize`](https://liran-funaro.github.io/objsize/library/objsize.html#module-objsize) | Traversal over Python's objects subtree and calculating the total size of the subtree (deep size). |
+| [`objsize`](https://liran-funaro.github.io/objsize/library/objsize.html#module-objsize)   | Traversal over Python's objects subtree and calculating the total size of the subtree (deep size).   |
+|-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
 
 # Install
 
