@@ -27,13 +27,18 @@ def iter_steps(workflow: dict, job="test"):
         yield step_name, step_run
 
 
-def main():
-    workflow = load_workflow()
-    for name, run in iter_steps(workflow, "test"):
+def run_job(workflow: dict, job="test"):
+    for name, run in iter_steps(workflow, job):
         print(name)
         ret = subprocess.run(run, shell=True)
         if ret.returncode != 0:
             exit(ret.returncode)
+
+
+def main():
+    workflow = load_workflow()
+    run_job(workflow, "lint")
+    run_job(workflow, "test")
 
 
 if __name__ == "__main__":

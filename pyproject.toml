@@ -28,7 +28,7 @@ dev = [
 ]
 docs = [
     "sphinx", "sphinx-rtd-theme", "sphinx_rtd_dark_mode", "myst_parser",
-    "sphinx-markdown-builder @ git+https://github.com/liran-funaro/sphinx-markdown-builder@master",
+    "sphinx-markdown-builder @ git+https://github.com/liran-funaro/sphinx-markdown-builder@main",
 ]
 
 [project.urls]
