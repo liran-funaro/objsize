@@ -17,15 +17,15 @@ safer execution.
 Key Features
 ------------
 
--  Traverse objects’ subtree
--  Calculates the size of objects, including nested objects (deep size), in bytes
--  Exclude non-exclusive objects
--  Exclude specified objects subtree
--  Provides flexibility by allowing users to define custom handlers for:
+* Traverse objects’ subtree
+* Calculates the size of objects, including nested objects (deep size), in bytes
+* Exclude non-exclusive objects
+* Exclude specified objects subtree
+* Provides flexibility by allowing users to define custom handlers for:
 
-   -  Object’s size calculation
-   -  Object’s referents (i.e., its children)
-   -  Object filter (skip specific objects)
+  -  Object’s size calculation
+  -  Object’s referents (i.e., its children)
+  -  Object filter (skip specific objects)
 
 Documentation
 -------------
@@ -133,9 +133,9 @@ filter function.
 
 Notes:
 
--  The default filter function is
+*  The default filter function is
    :py:func:`objsize.traverse.shared_object_or_function_filter`.
--  When using :py:func:`objsize.traverse.shared_object_filter`, shared functions and
+*  When using :py:func:`objsize.traverse.shared_object_filter`, shared functions and
    lambdas are also counted, but builtin functions are still excluded.
 
 Special Cases
@@ -330,16 +330,16 @@ Alternative
 determining an object deep size via ``pympler.asizeof()``. There are two
 main differences between ``objsize`` and ``pympler``.
 
-1. ``objsize`` has additional features:
+#. ``objsize`` has additional features:
 
-   -  Traversing the object subtree: iterating all the object’s
+   *  Traversing the object subtree: iterating all the object’s
       descendants one by one.
-   -  Excluding non-exclusive objects. That is, objects that are also
+   *  Excluding non-exclusive objects. That is, objects that are also
       referenced from somewhere else in the program. This is true for
       calculating the object’s deep size and for traversing its
       descendants.
 
-2. ``objsize`` has a simple and robust implementation with significantly
+#. ``objsize`` has a simple and robust implementation with significantly
    fewer lines of code, compared to ``pympler``. The Pympler
    implementation uses recursion, and thus have to use a maximal depth
    argument to avoid reaching Python’s max depth. ``objsize``, however,

@@ -24,7 +24,7 @@ docs: doc-html doc-markdown
 
 
 readme: doc-markdown
-	cp "$(BUILD_DIR)/markdown/index.md" README.md
+	cp "$(BUILD_DIR)/markdown/index.md" README.md $(SPHINX_OPTS) $(O)
 
 
 server:

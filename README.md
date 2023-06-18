@@ -20,9 +20,10 @@ safer execution.
 * Exclude non-exclusive objects
 * Exclude specified objects subtree
 * Provides flexibility by allowing users to define custom handlers for:
-    * Object’s size calculation
-    * Object’s referents (i.e., its children)
-    * Object filter (skip specific objects)
+
+  - Object’s size calculation
+  - Object’s referents (i.e., its children)
+  - Object filter (skip specific objects)
 
 ## Documentation
 
@@ -122,9 +123,9 @@ filter function.
 Notes:
 
 * The default filter function is
-[`objsize.traverse.shared_object_or_function_filter()`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.shared_object_or_function_filter).
+  [`objsize.traverse.shared_object_or_function_filter()`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.shared_object_or_function_filter).
 * When using [`objsize.traverse.shared_object_filter()`](https://liran-funaro.github.io/objsize/library/objsize.traverse.html#objsize.traverse.shared_object_filter), shared functions and
-lambdas are also counted, but builtin functions are still excluded.
+  lambdas are also counted, but builtin functions are still excluded.
 
 # Special Cases
 
@@ -313,20 +314,21 @@ determining an object deep size via `pympler.asizeof()`. There are two
 main differences between `objsize` and `pympler`.
 
 1. `objsize` has additional features:
-    * Traversing the object subtree: iterating all the object’s
-descendants one by one.
-    * Excluding non-exclusive objects. That is, objects that are also
-referenced from somewhere else in the program. This is true for
-calculating the object’s deep size and for traversing its
-descendants.
+
+   * Traversing the object subtree: iterating all the object’s
+     descendants one by one.
+   * Excluding non-exclusive objects. That is, objects that are also
+     referenced from somewhere else in the program. This is true for
+     calculating the object’s deep size and for traversing its
+     descendants.
 2. `objsize` has a simple and robust implementation with significantly
-fewer lines of code, compared to `pympler`. The Pympler
-implementation uses recursion, and thus have to use a maximal depth
-argument to avoid reaching Python’s max depth. `objsize`, however,
-uses BFS which is more efficient and simple to follow. Moreover, the
-Pympler implementation carefully takes care of any object type.
-`objsize` archives the same goal with a simple and generic
-implementation, which has fewer lines of code.
+   fewer lines of code, compared to `pympler`. The Pympler
+   implementation uses recursion, and thus have to use a maximal depth
+   argument to avoid reaching Python’s max depth. `objsize`, however,
+   uses BFS which is more efficient and simple to follow. Moreover, the
+   Pympler implementation carefully takes care of any object type.
+   `objsize` archives the same goal with a simple and generic
+   implementation, which has fewer lines of code.
 
 # License: BSD-3
 
@@ -337,13 +339,13 @@ Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
+   notice, this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
 3. Neither the name of the copyright holder nor the
-names of its contributors may be used to endorse or promote products
-derived from this software without specific prior written permission.
+   names of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
