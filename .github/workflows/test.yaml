@@ -1,4 +1,4 @@
-name: Test Python package
+name: CI/CD
 
 on: [ push, pull_request ]
 

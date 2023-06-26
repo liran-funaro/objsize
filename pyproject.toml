@@ -27,8 +27,7 @@ dev = [
     "bumpver", "black", "isort", "flake8", "pylint", "mypy", "pip-tools", "pytest", "pytest-cov", "coveralls", "pyyaml"
 ]
 docs = [
-    "sphinx", "sphinx-rtd-theme", "sphinx_rtd_dark_mode", "myst_parser",
-    "sphinx-markdown-builder @ git+https://github.com/liran-funaro/sphinx-markdown-builder@main",
+    "sphinx", "sphinx-rtd-theme", "sphinx_rtd_dark_mode", "myst_parser", "sphinx-markdown-builder>=0.6.0",
 ]
 
 [project.urls]
