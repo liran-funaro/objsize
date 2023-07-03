@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "objsize"
 copyright = "Copyright (c) 2006-2023, Liran Funaro."
 author = "Liran Funaro"
-version = "0.6.1"
+version = "0.7.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

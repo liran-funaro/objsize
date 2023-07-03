@@ -42,7 +42,7 @@ Install
 
 .. code:: bash
 
-   pip install objsize==0.6.1
+   pip install objsize==0.7.0
 
 Basic Usage
 ===========
