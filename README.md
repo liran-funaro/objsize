@@ -20,7 +20,6 @@ safer execution.
 * Exclude non-exclusive objects
 * Exclude specified objects subtree
 * Provides flexibility by allowing users to define custom handlers for:
-
   - Object’s size calculation
   - Object’s referents (i.e., its children)
   - Object filter (skip specific objects)
@@ -314,7 +313,6 @@ determining an object deep size via `pympler.asizeof()`. There are two
 main differences between `objsize` and `pympler`.
 
 1. `objsize` has additional features:
-
    * Traversing the object subtree: iterating all the object’s
      descendants one by one.
    * Excluding non-exclusive objects. That is, objects that are also
