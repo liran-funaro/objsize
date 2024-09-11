@@ -1,6 +1,7 @@
 """
 Handling of traversal.
 """
+
 import collections
 import gc
 import inspect

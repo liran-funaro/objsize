@@ -1,6 +1,7 @@
 """
 Traversal over Python's objects subtree and calculating the total size of the subtree (deep size).
 """
+
 import warnings
 from typing import Any, Iterable, Iterator, Optional
 
@@ -111,7 +112,7 @@ def traverse_exclusive_bfs(
     yield from settings.traverse_exclusive_bfs(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
-def get_deep_size(
+def get_deep_size(  # pylint: disable=too-many-arguments
     *objs,
     exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,
@@ -158,7 +159,7 @@ def get_deep_size(
     return settings.get_deep_size(*objs, marked_set=marked_set, exclude_set=exclude_set)
 
 
-def get_exclusive_deep_size(
+def get_exclusive_deep_size(  # pylint: disable=too-many-arguments
     *objs,
     exclude: Optional[Iterable[Any]] = None,
     marked_set: Optional[MarkedSet] = None,

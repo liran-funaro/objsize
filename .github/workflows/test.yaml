@@ -26,7 +26,7 @@ jobs:
           black ./*.py --check --diff
       - name: Lint with flake8
         run: |
-          flake8 . --count --select=E,F,W,C --show-source --max-complexity=10 --max-line-length=120 --statistics  --per-file-ignores='__init__.py:F401'
+          flake8 objsize --count --select=E,F,W,C --show-source --max-complexity=10 --max-line-length=120 --statistics  --per-file-ignores='__init__.py:F401'
       - name: Lint with pylint
         run: |
           pylint objsize
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.7", "3.8", "3.9", "3.10", "3.11" ]
+        python-version: [ "3.7", "3.8", "3.9", "3.10", "3.11", "3.12" ]
 
     steps:
       - uses: actions/checkout@v3
