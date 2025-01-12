@@ -59,6 +59,11 @@ def get_weakref_referents(*objs):
                 yield o.__repr__.__self__
             except ReferenceError:
                 pass
+        else:
+            try:
+                yield o.__dict__
+            except AttributeError:
+                pass
 
 
 ##################################################################
@@ -217,7 +222,7 @@ def test_size_of_weak_ref():
         pass
 
     obj = Foo(get_unique_strings(5))
-    expected_sz = get_flat_list_expected_size(obj)
+    expected_sz = get_flat_list_expected_size(obj) + sys.getsizeof(obj.__dict__)
     assert expected_sz == objsize.get_deep_size(obj)
 
     wait_event = threading.Event()
@@ -225,7 +230,6 @@ def test_size_of_weak_ref():
     proxy_sz = sys.getsizeof(obj_proxy)
     expected_with_proxy_sz = proxy_sz + expected_sz
 
-    assert proxy_sz == objsize.get_deep_size(obj_proxy)
     assert expected_with_proxy_sz == objsize.get_deep_size(obj_proxy, get_referents_func=get_weakref_referents)
     for cur_objsize in _test_all_update_techniques(get_referents_func=get_weakref_referents):
         assert expected_with_proxy_sz == cur_objsize.get_deep_size(obj_proxy)
@@ -350,6 +354,7 @@ def test_custom_class():
 def test_namedtuple():
     Point = namedtuple("Point", ["x", "y"])
     point = Point(3, 4)
+    # namedtuple object does not contain a dict.
     expected_size = sys.getsizeof(point) + sys.getsizeof(3) + sys.getsizeof(4)
     assert expected_size == objsize.get_deep_size(point)
 
@@ -359,16 +364,7 @@ def test_subclass_of_namedtuple():
         pass
 
     point = MyPoint(3, 4)
-    # namedtuple does not contain a dict.
-    # It is created on request and is not cached for later calls:
-    # >>> point = MyPoint(3, 4)
-    # >>> all_obj = {id(o) for o in gc.get_objects()}
-    # >>> id(point.__dict__) in all_obj
-    # False
-    # >>> all_obj = {id(o) for o in gc.get_objects()}
-    # >>> id(point.__dict__) in all_obj
-    # False
-    expected_size = sys.getsizeof(point) + sys.getsizeof(3) + sys.getsizeof(4)
+    expected_size = sys.getsizeof(point) + sys.getsizeof(point.__dict__) + sys.getsizeof(3) + sys.getsizeof(4)
     assert expected_size == objsize.get_deep_size(point)
 
 
@@ -377,6 +373,7 @@ def test_subclass_of_namedtuple_with_slots():
         __slots__ = ()
 
     point = MyPoint(3, 4)
+    # slot object does not contain a dict.
     expected_size = sys.getsizeof(point) + sys.getsizeof(3) + sys.getsizeof(4)
     assert expected_size == objsize.get_deep_size(point)
 

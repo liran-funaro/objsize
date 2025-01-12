@@ -66,8 +66,18 @@ def shared_object_filter(obj: Any) -> bool:
     return not safe_is_instance(obj, SharedObjectType)
 
 
-default_get_referents = gc.get_referents
-"""See https://docs.python.org/3/library/gc.html#gc.get_referents"""
+def default_get_referents(*objs: Any) -> Iterable[Any]:
+    """See https://docs.python.org/3/library/gc.html#gc.get_referents"""
+    yield from gc.get_referents(*objs)
+
+    # Starting from Python 3.12, c.get_referents(*objs) does not return the object's internal dict.
+    for obj in objs:
+        try:
+            yield obj.__dict__
+        except AttributeError:
+            pass
+
+
 default_object_filter = shared_object_or_function_filter
 """By default, we filter shared objects, i.e., types, modules, functions, and lambdas"""
 default_get_size = sys.getsizeof
