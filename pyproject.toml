@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "objsize"
-version = "0.7.0"
+version = "0.7.1"
 description = "Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size)."
 readme = "README.md"
 authors = [{ name = "Liran Funaro", email = "liran.funaro@gmail.com" }]
@@ -20,7 +20,7 @@ classifiers = [
 ]
 keywords = ["object-size", "recursive", "deep", "traversal", "object", "size", "debug", "deep-object-size"]
 dependencies = []
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = [
@@ -34,7 +34,7 @@ docs = [
 Homepage = "https://github.com/liran-funaro/objsize"
 
 [tool.bumpver]
-current_version = "0.7.0"
+current_version = "0.7.1"
 version_pattern = "MAJOR.MINOR.PATCH[-TAG]"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true

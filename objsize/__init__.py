@@ -21,7 +21,7 @@ from objsize.traverse import (
     shared_object_or_function_filter,
 )
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 default_settings = ObjSizeSettings()
 """
