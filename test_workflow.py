@@ -2,6 +2,7 @@
 """
 This scripts executes the test workflow locally.
 """
+
 import subprocess
 
 import yaml
