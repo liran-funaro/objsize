@@ -35,3 +35,10 @@ release:
 	@rm -rf dist/*
 	python3 -m build || exit
 	python3 -m twine upload --repository objsize dist/*
+
+lint:
+	black objsize --check --diff
+	black ./*.py --check --diff
+	flake8 objsize --count --select=E,F,W,C --show-source --max-complexity=10 --max-line-length=120 --statistics  --per-file-ignores='__init__.py:F401'
+	pylint objsize -v
+	mypy objsize --check-untyped-defs

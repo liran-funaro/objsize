@@ -348,7 +348,7 @@ class TraversalContext:
         current_frame = inspect.currentframe()
         frame_ids = {id(current_frame), id(subtree)}
         if hasattr(current_frame, "f_generator"):
-            frame_ids.add(id(current_frame.f_generator))
+            frame_ids.add(id(current_frame.f_generator))  # type: ignore[union-attr]
         frame_set = self.marked_set | frame_ids
 
         # We first make sure that any "old" objects that may refer to our subtree were collected.
