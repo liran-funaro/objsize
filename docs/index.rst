@@ -201,7 +201,7 @@ with its own referent and filter functions:
                yield o.untyped_storage()
 
    # `torch.dtype` is a common object like Python's types.
-   MySharedObjects = (*objsize.SharedObjectOrFunctionType, torch.dtype)
+   MySharedObjects = (*objsize.SHARED_OBJECT_OR_FUNCTION_TYPE, torch.dtype)
 
    def filter_func(o):
        return not objsize.safe_is_instance(o, MySharedObjects)

@@ -16,15 +16,15 @@ FilterFunc = Callable[[Any], bool]
 GetReferentsFunc = Callable[..., Iterable[Any]]
 SizeFunc = Callable[[Any], int]
 
-SharedObjectType = (
+SHARED_OBJECT_TYPE = (
     type,
     types.ModuleType,
     types.FrameType,
     types.BuiltinFunctionType,
 )
 
-SharedObjectOrFunctionType = (
-    *SharedObjectType,
+SHARED_OBJECT_OR_FUNCTION_TYPE = (
+    *SHARED_OBJECT_TYPE,
     types.FunctionType,
     types.LambdaType,
 )
@@ -58,12 +58,12 @@ def safe_is_instance(obj: Any, type_tuple) -> bool:
 
 def shared_object_or_function_filter(obj: Any) -> bool:
     """Filters objects that are likely to be shared among many objects."""
-    return not safe_is_instance(obj, SharedObjectOrFunctionType)
+    return not safe_is_instance(obj, SHARED_OBJECT_OR_FUNCTION_TYPE)
 
 
 def shared_object_filter(obj: Any) -> bool:
     """Filters objects that are likely to be shared among many objects, but includes functions and lambdas."""
-    return not safe_is_instance(obj, SharedObjectType)
+    return not safe_is_instance(obj, SHARED_OBJECT_TYPE)
 
 
 def default_get_referents(*objs: Any) -> Iterable[Any]:

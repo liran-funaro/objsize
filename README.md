@@ -132,10 +132,10 @@ Some objects handle their data in a way that prevents Python’s GC from
 detecting it. The user can supply a special way to calculate the actual
 size of these objects.
 
-## Case 1: [`torch`](https://pytorch.org/docs/stable/torch.html#module-torch)
+## Case 1: [`torch`](https://docs.pytorch.org/docs/stable/torch.html#module-torch)
 
 Using a simple calculation of the object size won’t work for
-[`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor).
+[`torch.Tensor`](https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor).
 
 ```pycon
 >>> import torch
@@ -186,7 +186,7 @@ def get_referents_torch(*objs):
             yield o.untyped_storage()
 
 # `torch.dtype` is a common object like Python's types.
-MySharedObjects = (*objsize.SharedObjectOrFunctionType, torch.dtype)
+MySharedObjects = (*objsize.SHARED_OBJECT_OR_FUNCTION_TYPE, torch.dtype)
 
 def filter_func(o):
     return not objsize.safe_is_instance(o, MySharedObjects)
