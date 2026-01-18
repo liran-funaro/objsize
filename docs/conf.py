@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.abspath(".."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "objsize"
-copyright = "Copyright (c) 2006-2025, Liran Funaro."
+copyright = "Copyright (c) 2006-2026, Liran Funaro."
 author = "Liran Funaro"
-version = "0.7.1"
+version = "0.8.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

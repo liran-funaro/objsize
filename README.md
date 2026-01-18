@@ -32,7 +32,7 @@ safer execution.
 # Install
 
 ```bash
-pip install objsize==0.7.1
+pip install objsize==0.8.0
 ```
 
 # Basic Usage
@@ -330,7 +330,7 @@ main differences between `objsize` and `pympler`.
 
 # License: BSD-3
 
-Copyright (c) 2006-2025, Liran Funaro.
+Copyright (c) 2006-2026, Liran Funaro.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
