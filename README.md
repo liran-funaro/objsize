@@ -1,6 +1,10 @@
 # objsize
 
-[![Coverage Status](https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master)](https://coveralls.io/github/liran-funaro/objsize?branch=master) [![Downloads](https://static.pepy.tech/badge/objsize)](https://pepy.tech/project/objsize)
+[![PyPI version](https://img.shields.io/pypi/v/objsize.svg)](https://pypi.org/project/objsize/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/objsize.svg)](https://pypi.org/project/objsize/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/objsize.svg)](https://pypi.org/project/objsize/)
+[![Downloads](https://static.pepy.tech/badge/objsize)](https://pepy.tech/project/objsize)
+[![Coverage Status](https://coveralls.io/repos/github/liran-funaro/objsize/badge.svg?branch=master)](https://coveralls.io/github/liran-funaro/objsize?branch=master) 
 
 The `objsize` Python package allows for the exploration and
 measurement of an object’s complete memory usage in bytes, including its
